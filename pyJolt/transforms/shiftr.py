@@ -3,7 +3,7 @@ from fnmatch import fnmatch
 
 
 def gen_defaultdict():
-    return lambda: defaultdict(l)
+    return defaultdict(gen_defaultdict)
 
 
 def update(base, update_dict):
