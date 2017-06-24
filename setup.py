@@ -1,5 +1,3 @@
-import re
-import ast
 from setuptools import setup
 
 version = ""

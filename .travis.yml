@@ -10,7 +10,7 @@ install:
   - travis_retry pip install -r requirements.txt -r test-requirements.txt -e .
   - travis_retry pip install coverage coveralls
 
-script: py.test --cov pyJolt --cov-report term-missing
+script: py.test --cov pyJolt --cov-report term-missing --flakes
 
 after_script:
   - coveralls
