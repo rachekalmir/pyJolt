@@ -34,6 +34,35 @@ def test_basic_shiftr():
     assert expected_output == output
 
 
+@pytest.mark.skip(reason="skip this test")
+def test_amp_subkey_shiftr():
+    base_data = {
+        "foo": {
+            "bar": {
+                "baz": 0  # & 0 = baz, & 1 = bar, & 2 = foo
+            }
+        },
+        "test-FOO-BAR": 1
+    }
+    spec = {
+        "foo": {
+            "bar": {
+                "baz": "&0-&1-&2"
+            }
+        },
+        "test-*-*": "&(0,0)-&(0,1)"
+    }
+    expected_output = {
+        "baz-bar-foo": 0,
+        "FOO-BAR": 1
+    }
+
+    factory = shiftr.shiftr_factory(spec=spec)
+    output = factory.process(data=base_data, tree=[])
+
+    assert expected_output == output
+
+
 def test_wildcard_multi_shiftr():
     base_data = {
         "rating": {
