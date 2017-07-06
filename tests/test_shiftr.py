@@ -2,7 +2,6 @@ from pyjolt.transforms import shiftr
 import pytest
 
 
-@pytest.mark.skip(reason="skip this test")
 def test_basic_shiftr():
     base_data = {
         "rating": {
@@ -29,12 +28,13 @@ def test_basic_shiftr():
         }
     }
 
-    output = shiftr.shift(spec=spec, data=base_data)
+    factory = shiftr.shiftr_factory(spec=spec)
+    output = factory.process(data=base_data, tree=[])
 
     assert expected_output == output
 
 
-def test_wildcard_shiftr():
+def test_wildcard_multi_shiftr():
     base_data = {
         "rating": {
             "primary": {
@@ -95,6 +95,7 @@ def test_wildcard_shiftr():
         }
     }
 
-    output = shiftr.shift(spec=spec, data=base_data)
+    factory = shiftr.shiftr_factory(spec=spec)
+    output = factory.process(data=base_data, tree=[])
 
     assert expected_output == output
