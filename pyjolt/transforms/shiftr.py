@@ -1,6 +1,7 @@
 import re
 from collections import Mapping
 from fnmatch import fnmatch
+from functools import partial
 
 from typing import Union, List
 
@@ -17,24 +18,26 @@ def update(base: dict, update_dict: dict):
     return base
 
 
-def process_amp(data: str, char: str) -> Union[int, List[int]]:
+def process_amp(data: str, tree: List, char: str, offset: int = 0) -> str:
     if re.match(re.escape(char) + r'$', data):
-        return 0
-    elif re.match(re.escape(char) + r'\d*', data):
-        return int(data[1:])
+        return tree[-1 + offset - 0]
+    elif re.match(re.escape(char) + r'\d+', data):
+        return tree[-1 + offset - int(data[1:])]
     elif re.match(re.escape(char) + r'\(\d+(,\d+)?\)', data):
         # TODO finish this
-        pass
+        return
     else:
         # TODO make new exception
         raise Exception
 
 
+def process_amp_regex(data, tree: List, char: str, offset: int = 0):
+    return process_amp(data.group(), tree=tree, char=char, offset=offset)
+
+
 def process_amp_str(data: str, tree: List, char: str, offset: int = 0) -> str:
-    matches = list(re.finditer(r'{0}\d*|{0}\(\d+(,\d+)?\)'.format(char), data))
-    for match in matches:
-        data = data[:match.pos] + tree[-1 + offset - process_amp(match.string, char=char)] + data[match.endpos:]
-    return data
+    repl = partial(process_amp_regex, tree=tree, char=char, offset=offset)
+    return re.sub(r'{0}\(\d+(,\d+)?\)|{0}\d*'.format(re.escape(char)), repl, str(data))
 
 
 class ShiftrSpec(object):
@@ -81,9 +84,9 @@ class ShiftrLeafSpec(ShiftrSpec):
             else:
                 rec_dict = rec_dict[ikey]
         if '$' in self.key:
-            rec_dict[self.spec.split('.')[-1]] = process_amp_str(self.key, tree, '$', -1)
+            rec_dict[process_amp_str(self.spec.split('.')[-1], tree, '&')] = process_amp_str(self.key, tree, '$', -1)
         else:
-            rec_dict[self.spec.split('.')[-1]] = data
+            rec_dict[process_amp_str(self.spec.split('.')[-1], tree, '&')] = process_amp_str(data, tree, '&') if '&' in str(data) else data
 
         return base_dict
 
