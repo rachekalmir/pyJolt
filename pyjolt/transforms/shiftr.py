@@ -3,12 +3,13 @@ from collections import Mapping
 from fnmatch import fnmatch
 from functools import partial
 
-from typing import Union, List
-
 from ..util import recursive_dict
 
 
-def update(base: dict, update_dict: dict):
+def update(base,  # type: dict
+           update_dict,  # type: dict
+           ):
+    # type: (...) -> dict
     for key, value in update_dict.items():
         if isinstance(value, Mapping):
             r = update(base.get(key, {}), value)
@@ -18,7 +19,12 @@ def update(base: dict, update_dict: dict):
     return base
 
 
-def process_amp(data: str, tree: List, char: str, offset: int = 0) -> str:
+def process_amp(data,  # type: str
+                tree,  # type: list
+                char,  # type: str
+                offset=0,  # type: int
+                ):
+    # type: (...) -> str
     if re.match(re.escape(char) + r'$', data):
         return tree[-1 + offset - 0]
     elif re.match(re.escape(char) + r'\d+', data):
@@ -31,11 +37,21 @@ def process_amp(data: str, tree: List, char: str, offset: int = 0) -> str:
         raise Exception
 
 
-def process_amp_regex(data, tree: List, char: str, offset: int = 0):
+def process_amp_regex(data,
+                      tree,  # type: list
+                      char,  # type: str
+                      offset=0,  # type: int
+                      ):
+    # type: (...) -> str
     return process_amp(data.group(), tree=tree, char=char, offset=offset)
 
 
-def process_amp_str(data: str, tree: List, char: str, offset: int = 0) -> str:
+def process_amp_str(data,  # type: str
+                    tree,  # type: list
+                    char,  # type: str
+                    offset=0,  # type: int
+                    ):
+    # type: (...) -> str
     repl = partial(process_amp_regex, tree=tree, char=char, offset=offset)
     return re.sub(r'{0}\(\d+(,\d+)?\)|{0}\d*'.format(re.escape(char)), repl, str(data))
 
@@ -44,7 +60,11 @@ class ShiftrSpec(object):
     key = None
     spec = None
 
-    def process(self, data: Union[str, dict], tree: List) -> dict:
+    def process(self,
+                data,  # type: Union[str, dict]
+                tree,  # type: list
+                ):
+        # type: (...) -> dict
         """
         Process the shift algorithm:
         Walk the input data and the spec simultaneously then output the transformation
@@ -67,14 +87,21 @@ class ShiftrSpec(object):
 
 
 class ShiftrLeafSpec(ShiftrSpec):
-    def __init__(self, key: Union[None, str], spec: str):
+    def __init__(self,
+                 key,  # type: Union[None, str]
+                 spec,  # type: str
+                 ):
         self.key = key
         self.spec = spec
 
     def __repr__(self):
         return "ShiftrLeafSpec('{}', '{}')".format(self.key, self.spec)
 
-    def process(self, data: str, tree: List) -> dict:
+    def process(self,
+                data,  # type: str
+                tree,  # type: list
+                ):
+        # type: (...) -> dict
         base_dict = recursive_dict()
         rec_dict = base_dict
         # TODO fix this
@@ -97,7 +124,10 @@ class ShiftrNodeSpec(ShiftrSpec):
     wildcard_children = None
     dollar_children = None
 
-    def __init__(self, key: Union[None, str], spec: dict):
+    def __init__(self,
+                 key,  # type: Union[None, str]
+                 spec,  # type: dict
+                 ):
         self.key = key
         self.spec = spec
 
@@ -123,7 +153,11 @@ class ShiftrNodeSpec(ShiftrSpec):
     def __repr__(self):
         return "ShiftNodeSpec('{}', {})".format(self.key, self.spec)
 
-    def process(self, data: dict, tree: List) -> dict:
+    def process(self,
+                data,  # type: dict
+                tree,  # type: list
+                ):
+        # type: (...) -> dict
         base = dict()
         for key, value in data.items():
             match = False
@@ -151,12 +185,17 @@ class ShiftrNodeSpec(ShiftrSpec):
         return base
 
 
-def shiftr_leaf_factory(key, spec, *args, **kwargs):
+def shiftr_leaf_factory(key,
+                        spec,
+                        *args,
+                        **kwargs):
     if isinstance(spec, dict):
         return ShiftrNodeSpec(key, spec)
     else:
         return ShiftrLeafSpec(key, spec)
 
 
-def shiftr_factory(spec: dict, *args, **kwargs):
+def shiftr_factory(spec,  # type: dict
+                   *args,
+                   **kwargs):
     return ShiftrNodeSpec(None, spec)
