@@ -180,7 +180,7 @@ class ShiftrNodeSpec(ShiftrSpec):
                     # compute * (wildcard) operator
                     match = re.match(translate(child.key), key)
                     if match:
-                        update(base, child.process(value, tree + [[key, *match.groups()] if match.groups() else key]))
+                        update(base, child.process(value, tree + [[key] + list(match.groups()) if match.groups() else key]))
 
             for child in self.dollar_children:
                 update(base, child.process(value, tree + [key]))
