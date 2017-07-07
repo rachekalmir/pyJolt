@@ -36,7 +36,7 @@ def process_amp(data,  # type: str
             # TODO make new exception
             raise Exception
 
-    return result[0] if result is list else result
+    return result[0] if isinstance(result, list) else result
 
 
 def process_amp_regex(data,
