@@ -37,22 +37,25 @@ def test_amp_subkey_shiftr():
     base_data = {
         "foo": {
             "bar": {
-                "baz": 0  # & 0 = baz, & 1 = bar, & 2 = foo
+                "baz": 0,  # & 0 = baz, & 1 = bar, & 2 = foo
+                "bar": 2,
             }
         },
-        "test-FOO-BAR": 1
+        "test-FOO-BAR": 1,
     }
     spec = {
         "foo": {
             "bar": {
-                "baz": "&0-&1-&2"
+                "baz": "&0-&1-&2",
+                "&": "Spec",
             }
         },
-        "test-*-*": "&(0,1)-&(0,2)"
+        "test-*-*": "&(0,1)-&(0,2)",
     }
     expected_output = {
         "baz-bar-foo": 0,
-        "FOO-BAR": 1
+        "FOO-BAR": 1,
+        "Spec": 2,
     }
 
     factory = shiftr.shiftr_factory(spec=spec)
