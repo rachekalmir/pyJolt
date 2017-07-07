@@ -34,7 +34,6 @@ def test_basic_shiftr():
     assert expected_output == output
 
 
-@pytest.mark.skip(reason="skip this test")
 def test_amp_subkey_shiftr():
     base_data = {
         "foo": {
@@ -50,7 +49,7 @@ def test_amp_subkey_shiftr():
                 "baz": "&0-&1-&2"
             }
         },
-        "test-*-*": "&(0,0)-&(0,1)"
+        "test-*-*": "&(0,1)-&(0,2)"
     }
     expected_output = {
         "baz-bar-foo": 0,

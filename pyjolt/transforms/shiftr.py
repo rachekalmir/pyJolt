@@ -1,9 +1,8 @@
 import re
 from collections import Mapping
-from fnmatch import fnmatch
 from functools import partial
 
-from ..util import recursive_dict
+from ..util import recursive_dict, translate
 
 
 def update(base,  # type: dict
@@ -26,15 +25,18 @@ def process_amp(data,  # type: str
                 ):
     # type: (...) -> str
     if re.match(re.escape(char) + r'$', data):
-        return tree[-1 + offset - 0]
+        result = tree[-1 + offset - 0]
     elif re.match(re.escape(char) + r'\d+', data):
-        return tree[-1 + offset - int(data[1:])]
-    elif re.match(re.escape(char) + r'\(\d+(,\d+)?\)', data):
-        # TODO finish this
-        return
+        result = tree[-1 + offset - int(data[1:])]
     else:
-        # TODO make new exception
-        raise Exception
+        match = re.match(re.escape(char) + r'\((\d+)(?:,(\d+))?\)', data)
+        if match:
+            result = tree[-1 + offset - int(match.groups()[0])][int(match.groups()[1])]
+        else:
+            # TODO make new exception
+            raise Exception
+
+    return result[0] if result is list else result
 
 
 def process_amp_regex(data,
@@ -168,16 +170,17 @@ class ShiftrNodeSpec(ShiftrSpec):
 
             if not match:
                 for child in self.computed_children:
-                    # TODO: compute & operator
+                    # compute & operator
                     if process_amp_str(child.key, tree, '&') == key:
                         match = True
                         update(base, child.process(value, tree + [key]))
 
             if not match:
                 for child in self.wildcard_children:
-                    # TODO: compute * (wildcard) operator
-                    if fnmatch(key, child.key):
-                        update(base, child.process(value, tree + [key]))
+                    # compute * (wildcard) operator
+                    match = re.match(translate(child.key), key)
+                    if match:
+                        update(base, child.process(value, tree + [[key, *match.groups()] if match.groups() else key]))
 
             for child in self.dollar_children:
                 update(base, child.process(value, tree + [key]))
