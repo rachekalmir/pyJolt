@@ -1,5 +1,4 @@
 from pyjolt.transforms import shiftr
-import pytest
 
 
 def test_basic_shiftr():
