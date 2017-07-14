@@ -1,6 +1,7 @@
 import re
 from collections import Mapping
 from functools import partial
+from queue import Queue
 
 from ..util import recursive_dict, translate
 
@@ -121,10 +122,12 @@ class ShiftrLeafSpec(ShiftrSpec):
 
 
 class ShiftrNodeSpec(ShiftrSpec):
-    literal_children = None
-    computed_children = None
-    wildcard_children = None
-    dollar_children = None
+    literal_children = None  # type: list
+    computed_children = None  # type: list
+    wildcard_children = None  # type: list
+    dollar_children = None  # type: list
+
+    process_queue = None  # type: Queue
 
     def __init__(self,
                  key,  # type: Union[None, str]
@@ -137,6 +140,8 @@ class ShiftrNodeSpec(ShiftrSpec):
         self.computed_children = []
         self.wildcard_children = []
         self.dollar_children = []
+
+        self.process_queue = Queue()
 
         for key, value in spec.items():
             child = shiftr_leaf_factory(key, value)
@@ -162,11 +167,23 @@ class ShiftrNodeSpec(ShiftrSpec):
         # type: (...) -> dict
         base = dict()
         for key, value in data.items():
+            self.process_queue.put((key, value))
+
+        while not self.process_queue.empty():
+            key, value = self.process_queue.get()
+
             match = False
             for child in self.literal_children:
                 if child.key == key:
                     match = True
                     update(base, child.process(value, tree + [key]))
+
+            # Re-add the value to the process queue if there is an OR in the key and it didn't match a literal key
+            # TODO: check if this is the intended functionality
+            if not match and '|' in key:
+                for k in key.split('|'):
+                    self.process_queue.put((k, value))
+                    continue
 
             if not match:
                 for child in self.computed_children:

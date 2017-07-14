@@ -42,6 +42,8 @@ def test_amp_subkey_shiftr():
             }
         },
         "test-FOO-BAR": 1,
+        "or1": 3,
+        "or2": 4,
     }
     spec = {
         "foo": {
@@ -51,11 +53,13 @@ def test_amp_subkey_shiftr():
             }
         },
         "test-*-*": "&(0,1)-&(0,2)",
+        "or1|or2": "or",
     }
     expected_output = {
         "baz-bar-foo": 0,
         "FOO-BAR": 1,
         "Spec": 2,
+        "or": [3, 4]
     }
 
     factory = shiftr.shiftr_factory(spec=spec)
