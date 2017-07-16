@@ -7,15 +7,24 @@ from ..util import recursive_dict, translate
 
 
 def update(base,  # type: dict
-           update_dict,  # type: dict
+           update_dict,  # type: Mapping
+           append=True,  # type: bool
            ):
     # type: (...) -> dict
     for key, value in update_dict.items():
         if isinstance(value, Mapping):
-            r = update(base.get(key, {}), value)
+            # if the value is a dictionary, recursive update it
+            r = update(base.get(key, {}), value, append=append)
             base[key] = r
+        elif key in base and append:
+            # if the key already exists in the base, update the list bucket
+            if isinstance(base[key], list):
+                base[key] += [value]
+            else:
+                base[key] = [base[key], value]
         else:
-            base[key] = update_dict[key]
+            # otherwise just append the value
+            base[key] = value
     return base
 
 
@@ -143,8 +152,21 @@ class ShiftrNodeSpec(ShiftrSpec):
 
         self.process_queue = Queue()
 
+        spec_queue = Queue()
+
         for key, value in spec.items():
+            spec_queue.put((key, value))
+
+        while not spec_queue.empty():
+            key, value = spec_queue.get()
             child = shiftr_leaf_factory(key, value)
+
+            # Re-add the value to the process queue if there is an OR in the key and it didn't match a literal key
+            # TODO: check if this is the intended functionality
+            if '|' in key:
+                for k in key.split('|'):
+                    spec_queue.put((k, value))
+                    continue
 
             if '*' in key:
                 self.wildcard_children.append(child)
@@ -178,13 +200,6 @@ class ShiftrNodeSpec(ShiftrSpec):
                     match = True
                     update(base, child.process(value, tree + [key]))
 
-            # Re-add the value to the process queue if there is an OR in the key and it didn't match a literal key
-            # TODO: check if this is the intended functionality
-            if not match and '|' in key:
-                for k in key.split('|'):
-                    self.process_queue.put((k, value))
-                    continue
-
             if not match:
                 for child in self.computed_children:
                     # compute & operator
@@ -200,7 +215,7 @@ class ShiftrNodeSpec(ShiftrSpec):
                         update(base, child.process(value, tree + [[key] + list(match.groups()) if match.groups() else key]))
 
             for child in self.dollar_children:
-                update(base, child.process(value, tree + [key]))
+                update(base, child.process(value, tree + [key]), append=False)
 
         return base
 
