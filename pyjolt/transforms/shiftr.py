@@ -3,7 +3,7 @@ from collections import Mapping
 from functools import partial
 from queue import Queue
 
-from ..util import recursive_dict, translate
+from ..util import recursive_dict, translate, UnsortedList
 
 
 def update(base,  # type: dict
@@ -19,9 +19,9 @@ def update(base,  # type: dict
         elif key in base and append:
             # if the key already exists in the base, update the list bucket
             if isinstance(base[key], list):
-                base[key] += [value]
+                base[key] += UnsortedList([value])
             else:
-                base[key] = [base[key], value]
+                base[key] = UnsortedList([base[key], value])
         else:
             # otherwise just append the value
             base[key] = value
