@@ -116,13 +116,16 @@ class ShiftrLeafSpec(ShiftrSpec):
         # type: (...) -> dict
         base_dict = recursive_dict()
         rec_dict = base_dict
+
         # TODO fix this
         for ikey in self.spec.split('.')[:-1]:
             if '&' in ikey:
                 rec_dict = rec_dict[process_amp_str(ikey, tree, '&')]
             else:
                 rec_dict = rec_dict[ikey]
-        if '$' in self.key:
+        if self.key.startswith('#'):
+            rec_dict[process_amp_str(self.spec.split('.')[-1], tree, '&')] = self.key[1:]
+        elif '$' in self.key:
             rec_dict[process_amp_str(self.spec.split('.')[-1], tree, '&')] = process_amp_str(self.key, tree, '$', -1)
         else:
             rec_dict[process_amp_str(self.spec.split('.')[-1], tree, '&')] = process_amp_str(data, tree, '&') if '&' in str(data) else data
@@ -172,7 +175,7 @@ class ShiftrNodeSpec(ShiftrSpec):
                 self.wildcard_children.append(child)
             elif '&' in key:
                 self.computed_children.append(child)
-            elif '$' in key:
+            elif '$' in key or '#' in key:
                 self.dollar_children.append(child)
             self.literal_children.append(child)
 
@@ -188,8 +191,12 @@ class ShiftrNodeSpec(ShiftrSpec):
                 ):
         # type: (...) -> dict
         base = dict()
-        for key, value in data.items():
-            self.process_queue.put((key, value))
+        if type(data) is dict:
+            for key, value in data.items():
+                self.process_queue.put((key, value))
+        else:
+            # Allow for processing of the # wildcard if the spec contains more nodes but the data stream doesn't
+            self.process_queue.put((data, None))
 
         while not self.process_queue.empty():
             key, value = self.process_queue.get()

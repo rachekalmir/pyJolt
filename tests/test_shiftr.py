@@ -74,6 +74,7 @@ def test_wildcard_multi_shiftr():
             "primary": {
                 "value": 3,  # want this value to goto output path "Rating"
                 "max": 5,  # want this value to goto output path "RatingRange"
+                "disabled": "true",
             },
             "quality": {  # want output path "SecondaryRatings.quality.Id" = "quality", aka we want the value of the key to be used
                 "value": 3,  # want this value to goto output path "SecondaryRatings.quality.Value"
@@ -90,6 +91,11 @@ def test_wildcard_multi_shiftr():
             "primary": {
                 "value": "Rating",  # output -> "Rating" : 3
                 "max": "RatingRange",  # output -> "RatingRange" : 5
+                "disabled": {
+                    "true": {
+                        "#disabled": "clients.clientId",
+                    }
+                }
             },
             "*": {  # match input data like "rating.[anything-other-than-primary]"
                 "value": "SecondaryRatings.&1.Value",  # the data at "rating.*.value" goes to "SecondaryRatings.*.Value"
@@ -112,6 +118,9 @@ def test_wildcard_multi_shiftr():
     expected_output = {
         "Rating": 3,
         "RatingRange": 5,
+        "clients": {
+            "clientId": "disabled",
+        },
         "SecondaryRatings": {
             "quality": {
                 "Range": 5,
