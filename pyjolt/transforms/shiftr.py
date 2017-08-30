@@ -207,16 +207,16 @@ class ShiftrNodeSpec(ShiftrSpec):
                     match = True
                     update(base, child.process(value, tree + [key]))
 
+            # compute & operator
             if not match:
                 for child in self.computed_children:
-                    # compute & operator
                     if process_amp_str(child.key, tree, '&') == key:
                         match = True
                         update(base, child.process(value, tree + [key]))
 
+            # compute * (wildcard) operator
             if not match:
                 for child in self.wildcard_children:
-                    # compute * (wildcard) operator
                     match = re.match(translate(child.key), key)
                     if match:
                         update(base, child.process(value, tree + [[key] + list(match.groups()) if match.groups() else key]))
