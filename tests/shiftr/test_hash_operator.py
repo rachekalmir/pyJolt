@@ -1,6 +1,8 @@
+import pytest
 from pyjolt.transforms import shiftr
 
 
+@pytest.mark.skip
 def test_hash_default():
     #  jolt/jolt-core/src/test/resources/json/shiftr/hashDefault.json
     input_data = {
@@ -43,6 +45,7 @@ def test_hash_default():
     assert expected_output == output
 
 
+@pytest.mark.skip
 def test_map_to_list1():
     #  jolt/jolt-core/src/test/resources/json/shiftr/mapToList.json
     input_data = {
@@ -80,6 +83,7 @@ def test_map_to_list1():
     assert expected_output == output
 
 
+@pytest.mark.skip
 def test_map_to_list2():
     #  jolt/jolt-core/src/test/resources/json/shiftr/mapToList2.json
     input_data = {

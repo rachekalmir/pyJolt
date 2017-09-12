@@ -34,18 +34,25 @@ def process_amp(data,  # type: str
                 offset=0,  # type: int
                 ):
     # type: (...) -> str
+
+    # First try to match the form of '&'
     if re.match(re.escape(char) + r'$', data):
         result = tree[-1 + offset - 0]
-    elif re.match(re.escape(char) + r'\d+', data):
+
+    # Else, try to match the form of '&1'
+    elif re.match(re.escape(char) + r'[0-9]+', data):
         result = tree[-1 + offset - int(data[1:])]
+
+    # Else, try to match the full form of '&(1, 2)'
     else:
-        match = re.match(re.escape(char) + r'\((\d+)(?:,(\d+))?\)', data)
+        match = re.match(re.escape(char) + r'\(([0-9]+)(?:,([0-9]+))?\)', data)
         if match:
             result = tree[-1 + offset - int(match.groups()[0])][int(match.groups()[1])]
         else:
             # TODO make new exception
             raise Exception
 
+    # return the processed pattern result
     return result[0] if isinstance(result, list) else result
 
 
@@ -65,12 +72,22 @@ def process_amp_str(data,  # type: str
                     ):
     # type: (...) -> str
     repl = partial(process_amp_regex, tree=tree, char=char, offset=offset)
-    return re.sub(r'{0}\(\d+(,\d+)?\)|{0}\d*'.format(re.escape(char)), repl, str(data))
+    return re.sub(r'(?<!\\){0}\([0-9]+(,[0-9]+)?\)|(?<!\\){0}[0-9]*'.format(re.escape(char)), repl, str(data))
+
+
+def process_str(data,  # type: str
+                tree,  # type: list
+                ):
+    # type: (...) -> str)
+    result = process_amp_str(data=data, tree=tree, char='&')
+    result = process_amp_str(data=result, tree=tree, char='@')
+    result = process_amp_str(data=result, tree=tree, char='$')
+    return result
 
 
 class ShiftrSpec(object):
-    key = None
-    spec = None
+    spec_key = None
+    spec_value = None
 
     def process(self,
                 data,  # type: Union[str, dict]
@@ -92,22 +109,22 @@ class ShiftrSpec(object):
         pass
 
     def __lt__(self, other):
-        return self.key < other.key
+        return self.spec_key < other.spec_key
 
     def __repr__(self):
-        return [self.key, self.spec]
+        return [self.spec_key, self.spec_value]
 
 
 class ShiftrLeafSpec(ShiftrSpec):
     def __init__(self,
-                 key,  # type: Union[None, str]
-                 spec,  # type: str
+                 spec_key,  # type: Union[None, str]
+                 spec_value,  # type: str
                  ):
-        self.key = key
-        self.spec = spec
+        self.spec_key = spec_key
+        self.spec_value = spec_value
 
     def __repr__(self):
-        return "ShiftrLeafSpec('{}', '{}')".format(self.key, self.spec)
+        return "ShiftrLeafSpec('{}', '{}')".format(self.spec_key, self.spec_value)
 
     def process(self,
                 data,  # type: str
@@ -118,17 +135,18 @@ class ShiftrLeafSpec(ShiftrSpec):
         rec_dict = base_dict
 
         # TODO fix this
-        for ikey in self.spec.split('.')[:-1]:
-            if '&' in ikey:
-                rec_dict = rec_dict[process_amp_str(ikey, tree, '&')]
-            else:
-                rec_dict = rec_dict[ikey]
-        if self.key.startswith('#'):
-            rec_dict[process_amp_str(self.spec.split('.')[-1], tree, '&')] = self.key[1:]
-        elif '$' in self.key:
-            rec_dict[process_amp_str(self.spec.split('.')[-1], tree, '&')] = process_amp_str(self.key, tree, '$', -1)
+
+        # Breakdown the spec_value from 'a.b.c.d' into its constituent parts and build up the result dictionary
+        for ikey in self.spec_value.split('.')[:-1]:
+            rec_dict = rec_dict[process_str(ikey, tree)]
+
+        #
+        if self.spec_key.startswith('#'):
+            rec_dict[process_str(self.spec_value.split('.')[-1], tree)] = self.spec_key[1:]
+        elif '$' in self.spec_key:
+            rec_dict[process_str(self.spec_value.split('.')[-1], tree)] = process_amp_str(self.spec_key, tree, '$', -1)
         else:
-            rec_dict[process_amp_str(self.spec.split('.')[-1], tree, '&')] = process_amp_str(data, tree, '&') if '&' in str(data) else data
+            rec_dict[process_str(self.spec_value.split('.')[-1], tree)] = process_str(data, tree) if isinstance(data, str) else data
 
         return base_dict
 
@@ -142,11 +160,11 @@ class ShiftrNodeSpec(ShiftrSpec):
     process_queue = None  # type: Queue
 
     def __init__(self,
-                 key,  # type: Union[None, str]
-                 spec,  # type: dict
+                 spec_key,  # type: Union[None, str]
+                 spec_value,  # type: dict
                  ):
-        self.key = key
-        self.spec = spec
+        self.spec_key = spec_key
+        self.spec_value = spec_value
 
         self.literal_children = []
         self.computed_children = []
@@ -157,25 +175,25 @@ class ShiftrNodeSpec(ShiftrSpec):
 
         spec_queue = Queue()
 
-        for key, value in spec.items():
-            spec_queue.put((key, value))
+        for spec_key, value in spec_value.items():
+            spec_queue.put((spec_key, value))
 
         while not spec_queue.empty():
-            key, value = spec_queue.get()
-            child = shiftr_leaf_factory(key, value)
+            spec_key, value = spec_queue.get()
+            child = shiftr_leaf_factory(spec_key, value)
 
             # Re-add the value to the process queue if there is an OR in the key and it didn't match a literal key
             # TODO: check if this is the intended functionality
-            if '|' in key:
-                for k in key.split('|'):
+            if '|' in spec_key:
+                for k in spec_key.split('|'):
                     spec_queue.put((k, value))
                     continue
 
-            if '*' in key:
+            if '*' in spec_key:
                 self.wildcard_children.append(child)
-            elif '&' in key:
+            elif '&' in spec_key:
                 self.computed_children.append(child)
-            elif '$' in key or '#' in key:
+            elif '$' in spec_key or '#' in spec_key or '@' in spec_key:
                 self.dollar_children.append(child)
             self.literal_children.append(child)
 
@@ -183,7 +201,7 @@ class ShiftrNodeSpec(ShiftrSpec):
         self.wildcard_children.sort()
 
     def __repr__(self):
-        return "ShiftNodeSpec('{}', {})".format(self.key, self.spec)
+        return "ShiftNodeSpec('{}', {})".format(self.spec_key, self.spec_value)
 
     def process(self,
                 data,  # type: dict
@@ -203,21 +221,21 @@ class ShiftrNodeSpec(ShiftrSpec):
 
             match = False
             for child in self.literal_children:
-                if child.key == key:
+                if child.spec_key == key:
                     match = True
                     update(base, child.process(value, tree + [key]))
 
             # compute & operator
             if not match:
                 for child in self.computed_children:
-                    if process_amp_str(child.key, tree, '&') == key:
+                    if process_amp_str(child.spec_key, tree, '&') == key:
                         match = True
                         update(base, child.process(value, tree + [key]))
 
             # compute * (wildcard) operator
             if not match:
                 for child in self.wildcard_children:
-                    match = re.match(translate(child.key), key)
+                    match = re.match(translate(child.spec_key), key)
                     if match:
                         update(base, child.process(value, tree + [[key] + list(match.groups()) if match.groups() else key]))
 
