@@ -1,6 +1,9 @@
+import pytest
+
 from pyjolt.transforms import shiftr
 
 
+@pytest.mark.skip
 def test_basic_shiftr():
     base_data = {
         "rating": {
@@ -28,7 +31,7 @@ def test_basic_shiftr():
     }
 
     factory = shiftr.shiftr_factory(spec=spec)
-    output = factory.process(data=base_data, tree=[])
+    output = factory.evaluate(data=base_data)
 
     assert expected_output == output
 
@@ -63,7 +66,7 @@ def test_amp_subkey_shiftr():
     }
 
     factory = shiftr.shiftr_factory(spec=spec)
-    output = factory.process(data=base_data, tree=[])
+    output = factory.evaluate(data=base_data)
 
     assert expected_output == output
 
@@ -138,6 +141,6 @@ def test_wildcard_multi_shiftr():
     }
 
     factory = shiftr.shiftr_factory(spec=spec)
-    output = factory.process(data=base_data, tree=[])
+    output = factory.evaluate(data=base_data)
 
     assert expected_output == output

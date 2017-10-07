@@ -1,9 +1,12 @@
 import re
 from collections import Mapping
+from datetime import date
+from distutils.util import strtobool
 from functools import partial
 from queue import Queue
 
 from ..util import recursive_dict, translate, UnsortedList
+from ..util.dict_walker import DictWalker
 
 
 def update(base,  # type: dict
@@ -29,7 +32,7 @@ def update(base,  # type: dict
 
 
 def process_amp(data,  # type: str
-                tree,  # type: list
+                tree,  # type: DictWalker
                 char,  # type: str
                 offset=0,  # type: int
                 ):
@@ -37,17 +40,17 @@ def process_amp(data,  # type: str
 
     # First try to match the form of '&'
     if re.match(re.escape(char) + r'$', data):
-        result = tree[-1 + offset - 0]
+        result = tree.tree()[-1 + offset]
 
     # Else, try to match the form of '&1'
     elif re.match(re.escape(char) + r'[0-9]+', data):
-        result = tree[-1 + offset - int(data[1:])]
+        result = tree.tree()[-1 + offset - int(data[1:])]
 
     # Else, try to match the full form of '&(1, 2)'
     else:
         match = re.match(re.escape(char) + r'\(([0-9]+)(?:,([0-9]+))?\)', data)
         if match:
-            result = tree[-1 + offset - int(match.groups()[0])][int(match.groups()[1])]
+            result = tree.tree()[-1 + offset - int(match.groups()[0])][int(match.groups()[1])]
         else:
             # TODO make new exception
             raise Exception
@@ -57,7 +60,7 @@ def process_amp(data,  # type: str
 
 
 def process_amp_regex(data,
-                      tree,  # type: list
+                      tree,  # type: DictWalker
                       char,  # type: str
                       offset=0,  # type: int
                       ):
@@ -66,7 +69,7 @@ def process_amp_regex(data,
 
 
 def process_amp_str(data,  # type: str
-                    tree,  # type: list
+                    tree,  # type: DictWalker
                     char,  # type: str
                     offset=0,  # type: int
                     ):
@@ -75,14 +78,59 @@ def process_amp_str(data,  # type: str
     return re.sub(r'(?<!\\){0}\([0-9]+(,[0-9]+)?\)|(?<!\\){0}[0-9]*'.format(re.escape(char)), repl, str(data))
 
 
+def process_at(data,  # type: str
+               tree,  # type: DictWalker
+               char,  # type: str
+               offset=0,  # type: int
+               ):
+    # type: (...) -> str
+
+    # Try to match the full form of '&(1, key_name)'
+    match = re.match(re.escape(char) + r'\(([0-9]+),([a-zA-Z0-9]+)\)', data)
+    if match:
+        result = tree.ascend(-offset + int(match.groups()[0]))[match.groups()[1]]
+    else:
+        # TODO make new exception
+        raise Exception
+
+    # return the processed pattern result
+    return result[0] if isinstance(result, list) else result
+
+
+def process_at_regex(data,
+                     tree,  # type: DictWalker
+                     char,  # type: str
+                     offset=0,  # type: int
+                     ):
+    # type: (...) -> str
+    return process_at(data.group(), tree=tree, char=char, offset=offset)
+
+
+def process_at_str(data,  # type: str
+                   tree,  # type: DictWalker
+                   char,  # type: str
+                   offset=0,  # type: int
+                   ):
+    # type: (...) -> str
+    repl = partial(process_at_regex, tree=tree, char=char, offset=offset)
+    return re.sub(r'(?<!\\){0}\([0-9]+(,[a-zA-Z0-9]+)?\)'.format(re.escape(char)), repl, str(data))
+
+
 def process_str(data,  # type: str
-                tree,  # type: list
+                tree,  # type: DictWalker
                 ):
-    # type: (...) -> str)
+    # type: (...) -> str
     result = process_amp_str(data=data, tree=tree, char='&')
-    result = process_amp_str(data=result, tree=tree, char='@')
+    result = process_at_str(data=result, tree=tree, char='@')
     result = process_amp_str(data=result, tree=tree, char='$')
     return result
+
+
+def literal_compare(spec_key,
+                    data_key):
+    if isinstance(data_key, bool):
+        return strtobool(spec_key) == data_key
+    return spec_key == data_key
 
 
 class ShiftrSpec(object):
@@ -91,7 +139,6 @@ class ShiftrSpec(object):
 
     def process(self,
                 data,  # type: Union[str, dict]
-                tree,  # type: list
                 ):
         # type: (...) -> dict
         """
@@ -127,8 +174,7 @@ class ShiftrLeafSpec(ShiftrSpec):
         return "ShiftrLeafSpec('{}', '{}')".format(self.spec_key, self.spec_value)
 
     def process(self,
-                data,  # type: str
-                tree,  # type: list
+                data,  # type: DictWalker
                 ):
         # type: (...) -> dict
         base_dict = recursive_dict()
@@ -138,15 +184,15 @@ class ShiftrLeafSpec(ShiftrSpec):
 
         # Breakdown the spec_value from 'a.b.c.d' into its constituent parts and build up the result dictionary
         for ikey in self.spec_value.split('.')[:-1]:
-            rec_dict = rec_dict[process_str(ikey, tree)]
+            rec_dict = rec_dict[process_str(ikey, data)]
 
         #
         if self.spec_key.startswith('#'):
-            rec_dict[process_str(self.spec_value.split('.')[-1], tree)] = self.spec_key[1:]
+            rec_dict[process_str(self.spec_value.split('.')[-1], data)] = self.spec_key[1:]
         elif '$' in self.spec_key:
-            rec_dict[process_str(self.spec_value.split('.')[-1], tree)] = process_amp_str(self.spec_key, tree, '$', -1)
+            rec_dict[process_str(self.spec_value.split('.')[-1], data)] = process_amp_str(self.spec_key, data, '$', -1)
         else:
-            rec_dict[process_str(self.spec_value.split('.')[-1], tree)] = process_str(data, tree) if isinstance(data, str) else data
+            rec_dict[process_str(self.spec_value.split('.')[-1], data)] = process_str(data, data) if isinstance(data.items(), str) else data.items()
 
         return base_dict
 
@@ -203,44 +249,49 @@ class ShiftrNodeSpec(ShiftrSpec):
     def __repr__(self):
         return "ShiftNodeSpec('{}', {})".format(self.spec_key, self.spec_value)
 
+    def evaluate(self,
+                 data,  # type: dict
+                 ):
+        # type: (...) -> dict
+        return self.process(DictWalker(data))
+
     def process(self,
-                data,  # type: dict
-                tree,  # type: list
+                data,  # type: DictWalker
                 ):
         # type: (...) -> dict
         base = dict()
-        if type(data) is dict:
+        if data.value_type(dict):
             for key, value in data.items():
                 self.process_queue.put((key, value))
         else:
             # Allow for processing of the # wildcard if the spec contains more nodes but the data stream doesn't
-            self.process_queue.put((data, None))
+            self.process_queue.put((data.items(), None))
 
         while not self.process_queue.empty():
             key, value = self.process_queue.get()
 
             match = False
             for child in self.literal_children:
-                if child.spec_key == key:
+                if literal_compare(child.spec_key, key):
                     match = True
-                    update(base, child.process(value, tree + [key]))
+                    update(base, child.process(data.descend(key)))
 
             # compute & operator
             if not match:
                 for child in self.computed_children:
-                    if process_amp_str(child.spec_key, tree, '&') == key:
+                    if process_amp_str(child.spec_key, data, '&') == key:
                         match = True
-                        update(base, child.process(value, tree + [key]))
+                        update(base, child.process(data.descend(key)))
 
             # compute * (wildcard) operator
             if not match:
                 for child in self.wildcard_children:
                     match = re.match(translate(child.spec_key), key)
                     if match:
-                        update(base, child.process(value, tree + [[key] + list(match.groups()) if match.groups() else key]))
+                        update(base, child.process(data.descend(list(match.groups()) if match.groups() else key)))
 
             for child in self.dollar_children:
-                update(base, child.process(value, tree + [key]), append=False)
+                update(base, child.process(data.descend(key)), append=False)
 
         return base
 
