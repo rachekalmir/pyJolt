@@ -50,13 +50,13 @@ def process_amp(data,  # type: str
     else:
         match = re.match(re.escape(char) + r'\(([0-9]+)(?:,([0-9]+))?\)', data)
         if match:
-            result = tree.tree()[-1 + offset - int(match.groups()[0])][int(match.groups()[1])]
+            result = tree.ascend(offset - int(match.groups()[0])).match_group(int(match.groups()[1]))
         else:
             # TODO make new exception
             raise Exception
 
     # return the processed pattern result
-    return result[0] if isinstance(result, list) else result
+    return result[0] if isinstance(result, list) or isinstance(result, tuple) else result
 
 
 def process_amp_regex(data,
@@ -288,7 +288,7 @@ class ShiftrNodeSpec(ShiftrSpec):
                 for child in self.wildcard_children:
                     match = re.match(translate(child.spec_key), key)
                     if match:
-                        update(base, child.process(data.descend(list(match.groups()) if match.groups() else key)))
+                        update(base, child.process(data.descend(key, match.groups() if match.groups() else ())))
 
             for child in self.dollar_children:
                 update(base, child.process(data.descend(key)), append=False)

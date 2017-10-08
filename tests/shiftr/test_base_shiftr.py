@@ -3,7 +3,6 @@ import pytest
 from pyjolt.transforms import shiftr
 
 
-@pytest.mark.skip
 def test_basic_shiftr():
     base_data = {
         "rating": {
