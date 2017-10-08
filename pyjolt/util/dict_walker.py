@@ -1,6 +1,3 @@
-from copy import copy
-
-
 def apply_list_to_dict(dct,  # type: dict
                        lst,  # type: list
                        ):

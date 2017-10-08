@@ -1,6 +1,5 @@
 import re
 from collections import Mapping
-from datetime import date
 from distutils.util import strtobool
 from functools import partial
 from queue import Queue
