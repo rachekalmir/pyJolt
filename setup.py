@@ -2,13 +2,12 @@
 Python JOLT Implementation
 """
 from setuptools import setup
+import configparser
 
-with open('requirements.txt') as f:
-    install_requires = f.read().splitlines()
-
-with open('test-requirements.txt') as f:
-    tests_requires = f.read().splitlines()
-
+config = configparser.ConfigParser()
+config.read('Pipfile')
+install_requires = list(map(lambda v: v[0] + v[1].strip("'"), config['packages'].items()))
+tests_requires = list(map(lambda v: v[0] + v[1].strip("'"), config['dev-packages'].items()))
 setup(
     name='pyjolt',
     version='0.0.1',

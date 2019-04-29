@@ -4,9 +4,11 @@ python:
   - "3.4"
   - "3.5"
   - "3.6"
+  - "3.7"
 install:
-  - travis_retry pip install -r requirements.txt -r test-requirements.txt -e .
-  - travis_retry pip install coverage coveralls
+  - travis_retry pip install pipenv
+  - travis_retry pipenv install coverage coveralls
+  - travis_retry pipenv install -e .
 
 script: py.test --cov pyjolt --cov-report term-missing --flakes
 
