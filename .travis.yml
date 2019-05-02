@@ -1,3 +1,4 @@
+dist: xenial
 language: python
 python:
   - "3.3"
@@ -7,8 +8,7 @@ python:
   - "3.7"
 install:
   - travis_retry pip install pipenv
-  - travis_retry pipenv install coverage coveralls
-  - travis_retry pipenv install -e .
+  - travis_retry pipenv install coverage coveralls -e .
 
 script: py.test --cov pyjolt --cov-report term-missing --flakes
 
