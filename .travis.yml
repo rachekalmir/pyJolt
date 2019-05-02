@@ -8,7 +8,7 @@ python:
   - "3.7"
 install:
   - travis_retry pip install pipenv
-  - travis_retry pipenv install coverage coveralls -e .
+  - travis_retry pipenv install coverage coveralls -e . --dev
 
 script: py.test --cov pyjolt --cov-report term-missing --flakes
 
