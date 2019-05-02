@@ -18,6 +18,6 @@ setup(
     url='https://github.com/rachekalmir/pyjolt/',
     license='Apache 2.0',
     packages=['pyjolt'],
-    install_requires=install_requires if install_requires else '',
+    # install_requires=install_requires,
     tests_requires=tests_requires,
 )
