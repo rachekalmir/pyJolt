@@ -68,5 +68,5 @@ class DictWalker(object):
                 ):
         # type: (...) -> DictWalker
         return DictWalker(self._dictionary,
-                          self._tree + (key if type(key) == list else [key]),
+                          self._tree + (key if isinstance(key, list) else [key]),
                           self._match_group + [match_group if match_group is not None else ()])
