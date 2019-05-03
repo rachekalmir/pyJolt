@@ -5,10 +5,10 @@ Python implementation of [Jolt](https://github.com/bazaarvoice/jolt).
 
 ## Feature Set
 
-Feature | Progress |
-------- | -------- |
-Shift | *In progress* |
-Default | |
-Remove | |
-Cardinality | |
-Sort | |
+| Feature     | Progress      |
+| ----------- | ------------- |
+| Shift       | *In progress* |
+| Default     |               |
+| Remove      |               |
+| Cardinality |               |
+| Sort        |               |
