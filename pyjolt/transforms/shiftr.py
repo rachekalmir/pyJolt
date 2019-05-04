@@ -1,5 +1,6 @@
 import re
-from collections import Mapping
+from collections.abc import Mapping
+
 from distutils.util import strtobool
 from functools import partial
 from queue import Queue
