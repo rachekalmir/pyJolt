@@ -44,7 +44,6 @@ def test_hash_default():
     assert expected_output == output
 
 
-@pytest.mark.skip
 def test_map_to_list1():
     #  jolt/jolt-core/src/test/resources/json/shiftr/mapToList.json
     input_data = {

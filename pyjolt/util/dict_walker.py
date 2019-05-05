@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Union
 
 
@@ -48,7 +46,8 @@ class DictWalker(object):
         else:
             return self._match_group[-1][1 - number]
 
-    def ascend(self, levels: int) -> DictWalker:
+    def ascend(self, levels: int):
+        # type(...) -> DictWalker:
         if levels == 0:
             return self
         if levels < 0:

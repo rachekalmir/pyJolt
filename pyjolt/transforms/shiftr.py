@@ -151,23 +151,16 @@ class ShiftrLeafSpec(ShiftrSpec):
 
 
 class ShiftrNodeSpec(ShiftrSpec):
-    literal_children: list = None
-    computed_children: list = None
-    wildcard_children: list = None
-    dollar_children: list = None
+    literal_children = []  # type: list
+    computed_children = []  # type: list
+    wildcard_children = []  # type: list
+    dollar_children = []  # type: list
 
-    process_queue: Queue = None
+    process_queue = Queue()  # type: Queue
 
     def __init__(self, spec_key: Union[None, str], spec_value: dict):
         self.spec_key = spec_key
         self.spec_value = spec_value
-
-        self.literal_children = []
-        self.computed_children = []
-        self.wildcard_children = []
-        self.dollar_children = []
-
-        self.process_queue = Queue()
 
         spec_queue = Queue()
 
