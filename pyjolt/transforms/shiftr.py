@@ -4,16 +4,13 @@ from collections.abc import Mapping
 from distutils.util import strtobool
 from functools import partial
 from queue import Queue
+from typing import Union
 
 from ..util import recursive_dict, translate, UnsortedList
 from ..util.dict_walker import DictWalker
 
 
-def update(base,  # type: dict
-           update_dict,  # type: Mapping
-           append=True,  # type: bool
-           ):
-    # type: (...) -> dict
+def update(base: dict, update_dict: Mapping, append: bool = True) -> dict:
     for key, value in update_dict.items():
         if isinstance(value, Mapping):
             # if the value is a dictionary, recursive update it
@@ -31,13 +28,7 @@ def update(base,  # type: dict
     return base
 
 
-def process_amp(data,  # type: str
-                tree,  # type: DictWalker
-                char,  # type: str
-                offset=0,  # type: int
-                ):
-    # type: (...) -> str
-
+def process_amp(data: str, tree: DictWalker, char: str, offset: int = 0) -> str:
     # First try to match the form of '&'
     if re.match(re.escape(char) + r'$', data):
         result = tree.tree()[-1 + offset]
@@ -59,32 +50,16 @@ def process_amp(data,  # type: str
     return result[0] if isinstance(result, list) or isinstance(result, tuple) else result
 
 
-def process_amp_regex(data,
-                      tree,  # type: DictWalker
-                      char,  # type: str
-                      offset=0,  # type: int
-                      ):
-    # type: (...) -> str
+def process_amp_regex(data, tree: DictWalker, char: str, offset: int = 0) -> str:
     return process_amp(data.group(), tree=tree, char=char, offset=offset)
 
 
-def process_amp_str(data,  # type: str
-                    tree,  # type: DictWalker
-                    char,  # type: str
-                    offset=0,  # type: int
-                    ):
-    # type: (...) -> str
+def process_amp_str(data: str, tree: DictWalker, char: str, offset: int = 0) -> str:
     repl = partial(process_amp_regex, tree=tree, char=char, offset=offset)
     return re.sub(r'(?<!\\){0}\([0-9]+(,[0-9]+)?\)|(?<!\\){0}[0-9]*'.format(re.escape(char)), repl, str(data))
 
 
-def process_at(data,  # type: str
-               tree,  # type: DictWalker
-               char,  # type: str
-               offset=0,  # type: int
-               ):
-    # type: (...) -> str
-
+def process_at(data: str, tree: DictWalker, char: str, offset: int = 0) -> str:
     # Try to match the full form of '&(1, key_name)'
     match = re.match(re.escape(char) + r'\(([0-9]+),([a-zA-Z0-9]+)\)', data)
     if match:
@@ -97,29 +72,16 @@ def process_at(data,  # type: str
     return result[0] if isinstance(result, list) else result
 
 
-def process_at_regex(data,
-                     tree,  # type: DictWalker
-                     char,  # type: str
-                     offset=0,  # type: int
-                     ):
-    # type: (...) -> str
+def process_at_regex(data, tree: DictWalker, char: str, offset: int = 0) -> str:
     return process_at(data.group(), tree=tree, char=char, offset=offset)
 
 
-def process_at_str(data,  # type: str
-                   tree,  # type: DictWalker
-                   char,  # type: str
-                   offset=0,  # type: int
-                   ):
-    # type: (...) -> str
+def process_at_str(data: str, tree: DictWalker, char: str, offset: int = 0) -> str:
     repl = partial(process_at_regex, tree=tree, char=char, offset=offset)
     return re.sub(r'(?<!\\){0}\([0-9]+(,[a-zA-Z0-9]+)?\)'.format(re.escape(char)), repl, str(data))
 
 
-def process_str(data,  # type: str
-                tree,  # type: DictWalker
-                ):
-    # type: (...) -> str
+def process_str(data: str, tree: DictWalker) -> str:
     result = process_amp_str(data=data, tree=tree, char='&')
     result = process_at_str(data=result, tree=tree, char='@')
     result = process_amp_str(data=result, tree=tree, char='$')
@@ -137,10 +99,7 @@ class ShiftrSpec(object):
     spec_key = None
     spec_value = None
 
-    def process(self,
-                data,  # type: Union[str, dict]
-                ):
-        # type: (...) -> dict
+    def process(self, data: Union[str, dict]) -> dict:
         """
         Process the shift algorithm:
         Walk the input data and the spec simultaneously then output the transformation
@@ -163,20 +122,14 @@ class ShiftrSpec(object):
 
 
 class ShiftrLeafSpec(ShiftrSpec):
-    def __init__(self,
-                 spec_key,  # type: Union[None, str]
-                 spec_value,  # type: str
-                 ):
+    def __init__(self, spec_key: Union[None, str], spec_value: str):
         self.spec_key = spec_key
         self.spec_value = spec_value
 
     def __repr__(self):
         return "ShiftrLeafSpec('{}', '{}')".format(self.spec_key, self.spec_value)
 
-    def process(self,
-                data,  # type: DictWalker
-                ):
-        # type: (...) -> dict
+    def process(self, data: DictWalker) -> dict:
         base_dict = recursive_dict()
         rec_dict = base_dict
 
@@ -198,17 +151,14 @@ class ShiftrLeafSpec(ShiftrSpec):
 
 
 class ShiftrNodeSpec(ShiftrSpec):
-    literal_children = None  # type: list
-    computed_children = None  # type: list
-    wildcard_children = None  # type: list
-    dollar_children = None  # type: list
+    literal_children: list = None
+    computed_children: list = None
+    wildcard_children: list = None
+    dollar_children: list = None
 
-    process_queue = None  # type: Queue
+    process_queue: Queue = None
 
-    def __init__(self,
-                 spec_key,  # type: Union[None, str]
-                 spec_value,  # type: dict
-                 ):
+    def __init__(self, spec_key: Union[None, str], spec_value: dict):
         self.spec_key = spec_key
         self.spec_value = spec_value
 
@@ -249,16 +199,10 @@ class ShiftrNodeSpec(ShiftrSpec):
     def __repr__(self):
         return "ShiftNodeSpec('{}', {})".format(self.spec_key, self.spec_value)
 
-    def evaluate(self,
-                 data,  # type: dict
-                 ):
-        # type: (...) -> dict
+    def evaluate(self, data: dict) -> dict:
         return self.process(DictWalker(data))
 
-    def process(self,
-                data,  # type: DictWalker
-                ):
-        # type: (...) -> dict
+    def process(self, data: DictWalker) -> dict:
         base = dict()
         if data.value_type(dict):
             for key, value in data.items():
@@ -296,17 +240,12 @@ class ShiftrNodeSpec(ShiftrSpec):
         return base
 
 
-def shiftr_leaf_factory(key,
-                        spec,
-                        *args,
-                        **kwargs):
+def shiftr_leaf_factory(key, spec, *args, **kwargs):
     if isinstance(spec, dict):
         return ShiftrNodeSpec(key, spec)
     else:
         return ShiftrLeafSpec(key, spec)
 
 
-def shiftr_factory(spec,  # type: dict
-                   *args,
-                   **kwargs):
+def shiftr_factory(spec: dict, *args, **kwargs):
     return ShiftrNodeSpec(None, spec)

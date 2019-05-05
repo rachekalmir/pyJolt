@@ -1,6 +1,9 @@
-def apply_list_to_dict(dct,  # type: dict
-                       lst,  # type: list
-                       ):
+from __future__ import annotations
+
+from typing import Union
+
+
+def apply_list_to_dict(dct: dict, lst: list):
     try:
         for item in lst:
             dct = dct[item]
@@ -10,11 +13,7 @@ def apply_list_to_dict(dct,  # type: dict
 
 
 class DictWalker(object):
-    def __init__(self,
-                 dictionary,  # type: dict
-                 tree=None,  # type: list
-                 match_group=None,  # type: list
-                 ):
+    def __init__(self, dictionary: dict, tree: list = None, match_group: list = None):
         if tree is None:
             tree = []
         if match_group is None:
@@ -40,21 +39,16 @@ class DictWalker(object):
         else:
             return self._dict_cache
 
-    def tree(self):
-        # type: (...) -> list
+    def tree(self) -> list:
         return list(iter(self._tree))
 
-    def match_group(self, number: int):
-        # type: (...) -> list
+    def match_group(self, number: int) -> list:
         if number == 0:
             return self._tree[-1]
         else:
             return self._match_group[-1][1 - number]
 
-    def ascend(self,
-               levels  # type: int
-               ):
-        # type: (...) -> DictWalker
+    def ascend(self, levels: int) -> DictWalker:
         if levels == 0:
             return self
         if levels < 0:
@@ -62,11 +56,7 @@ class DictWalker(object):
             # TODO raise exception here
         return DictWalker(self._dictionary, self._tree[:-levels], self._match_group[:-levels])
 
-    def descend(self,
-                key,  # type: Union[str, list]
-                match_group=None,  # type: Union[list, tuple]
-                ):
-        # type: (...) -> DictWalker
+    def descend(self, key: Union[str, list], match_group: Union[list, tuple] = None) -> DictWalker:
         return DictWalker(self._dictionary,
                           self._tree + (key if isinstance(key, list) else [key]),
                           self._match_group + [match_group if match_group is not None else ()])
