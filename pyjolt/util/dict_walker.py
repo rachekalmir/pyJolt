@@ -55,7 +55,8 @@ class DictWalker(object):
             # TODO raise exception here
         return DictWalker(self._dictionary, self._tree[:-levels], self._match_group[:-levels])
 
-    def descend(self, key: Union[str, list], match_group: Union[list, tuple] = None) -> DictWalker:
+    def descend(self, key: Union[str, list], match_group: Union[list, tuple] = None):
+        # type(...) -> DictWalker:
         return DictWalker(self._dictionary,
                           self._tree + (key if isinstance(key, list) else [key]),
                           self._match_group + [match_group if match_group is not None else ()])
