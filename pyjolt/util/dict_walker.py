@@ -51,8 +51,8 @@ class DictWalker(object):
         if levels == 0:
             return self
         if levels < 0:
-            pass
             # TODO raise exception here
+            pass
         return DictWalker(self._dictionary, self._tree[:-levels], self._match_group[:-levels])
 
     def descend(self, key: Union[str, list], match_group: Union[list, tuple] = None):

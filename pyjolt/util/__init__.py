@@ -29,6 +29,8 @@ def translate(pat):
         i = i + 1
         if c == '*':
             res = res + '(.*)'
+        elif c == '|':
+            res = res + '|'
         elif c == '?':
             res = res + '.'
         elif c == '[':

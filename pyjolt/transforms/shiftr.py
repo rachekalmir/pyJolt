@@ -139,7 +139,7 @@ class ShiftrLeafSpec(ShiftrSpec):
         for ikey in self.spec_value.split('.')[:-1]:
             rec_dict = rec_dict[process_str(ikey, data)]
 
-        #
+        # Use # to denote a fixed string in the output
         if self.spec_key.startswith('#'):
             rec_dict[process_str(self.spec_value.split('.')[-1], data)] = self.spec_key[1:]
         elif '$' in self.spec_key:
