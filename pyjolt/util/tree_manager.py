@@ -1,7 +1,7 @@
 import operator
 from collections import defaultdict
 from functools import reduce
-from typing import Union, List, Dict, Tuple
+from typing import Union, List, Dict
 
 
 def recursive_dict():
