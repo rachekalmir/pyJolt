@@ -2,7 +2,7 @@ import operator
 import re
 from functools import reduce, partial
 from queue import Queue
-from typing import List, Match, Dict, Any
+from typing import List, Match
 
 from pyjolt.util import translate
 from pyjolt.util.tree_manager import TreeManager, recursive_dict, PropertyManager, PropertyHolder

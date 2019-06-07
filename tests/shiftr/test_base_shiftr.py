@@ -1,5 +1,3 @@
-import pytest
-
 from pyjolt.transforms.shiftr_rewrite import shiftr
 
 
