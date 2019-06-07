@@ -1,6 +1,4 @@
-import operator
 from collections import defaultdict
-from functools import reduce
 from typing import Union, List, Dict
 
 
@@ -50,7 +48,15 @@ class TreeManager(object):
     def __init__(self, tree: Union[Tree, Dict], path: List[str]):
         self._tree = tree if isinstance(tree, Tree) else Tree(tree)
         self.path = path
-        self._dict = reduce(operator.getitem, [self._tree.dictionary] + path)
+        # self._dict = reduce(operator.getitem, [self._tree.dictionary] + path)
+        self._dict = self._tree.dictionary
+        for i in path:
+            if isinstance(self._dict, dict):
+                self._dict = self._dict[i]
+            elif self._dict == i:
+                self._dict = None
+            else:
+                raise KeyError()
 
     def __getitem__(self, item: str):
         # type: (...) -> TreeManager
@@ -61,10 +67,18 @@ class TreeManager(object):
             yield key, TreeManager(self._tree, self.path + [key])
 
     def __repr__(self):
-        return 'TreeManager(' + repr(self._dict) + ')'
+        return 'TreeManager(' + repr(self.current_key) + ', ' + repr(self._dict) + ')'
 
     def keys(self):
-        return self._dict.keys() if isinstance(self._dict, dict) else []
+        if isinstance(self._dict, dict):
+            return self._dict.keys()
+        elif isinstance(self._dict, list):
+            return self._dict
+        return [self._dict]
+
+    @property
+    def current_key(self):
+        return self.path[-1] if self.path else None
 
     @property
     def value(self):

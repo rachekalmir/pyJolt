@@ -66,7 +66,6 @@ def test_amp_subkey_shiftr():
     assert expected_output == output
 
 
-@pytest.mark.skip
 def test_wildcard_multi_shiftr():
     base_data = {
         "rating": {
