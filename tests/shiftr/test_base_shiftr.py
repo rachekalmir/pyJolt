@@ -1,3 +1,5 @@
+from deepdiff import DeepDiff
+
 from pyjolt.transforms.shiftr_rewrite import shiftr
 
 
@@ -28,7 +30,7 @@ def test_basic_shiftr():
     }
     output = shiftr(base_data, spec)
 
-    assert expected_output == output
+    assert DeepDiff(expected_output, output, ignore_order=True, report_repetition=True)
 
 
 def test_amp_subkey_shiftr():
@@ -61,7 +63,7 @@ def test_amp_subkey_shiftr():
     }
     output = shiftr(base_data, spec)
 
-    assert expected_output == output
+    assert DeepDiff(expected_output, output, ignore_order=True, report_repetition=True)
 
 
 def test_wildcard_multi_shiftr():
@@ -134,4 +136,4 @@ def test_wildcard_multi_shiftr():
     }
     output = shiftr(base_data, spec)
 
-    assert expected_output == output
+    assert DeepDiff(expected_output, output, ignore_order=True, report_repetition=True)

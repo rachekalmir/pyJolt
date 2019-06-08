@@ -11,6 +11,7 @@ pytest-cache = '>=1.0'
 pytest-cov = '>=1.6'
 pytest-flakes = '>=0.2'
 tox = '>=1.7.0'
+deepdiff = '>=4.0.6'
 
 [requires]
 python_version = "3.7"
