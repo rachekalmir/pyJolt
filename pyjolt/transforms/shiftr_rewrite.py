@@ -1,8 +1,9 @@
 import operator
 import re
+from distutils.util import strtobool
 from functools import reduce, partial
 from queue import Queue
-from typing import List, Match
+from typing import List, Match, Union
 
 from pyjolt.util import translate
 from pyjolt.util.tree_manager import TreeManager, recursive_dict, PropertyManager, PropertyHolder
@@ -10,6 +11,20 @@ from pyjolt.util.tree_manager import TreeManager, recursive_dict, PropertyManage
 
 class JoltException(Exception):
     pass
+
+
+def get_operator_value(tree: TreeManager, match: Match) -> str:
+    if match.group()[0] == '&':
+        return tree.current_key
+    elif match.group()[0] == '@':
+        return tree.value
+    raise JoltException()
+
+
+def literal_compare(spec_key: str, data_key: Union[str, bool]):
+    if isinstance(data_key, bool):
+        return strtobool(spec_key) == data_key
+    return spec_key == data_key
 
 
 def process_amp(data: TreeManager, spec: TreeManager, properties: PropertyManager, match: Match, lookup_offset=0) -> str:
@@ -24,24 +39,26 @@ def process_amp(data: TreeManager, spec: TreeManager, properties: PropertyManage
     # return the processed pattern result
     if isinstance(descend, int):
         if descend == 0:
-            return data.ascend(ascend).path[-1]
+            return get_operator_value(data.ascend(ascend), match)
         return properties[data.ascend(ascend).path].matches.groups()[descend - 1]
     elif isinstance(descend, str):
-        return data.ascend(ascend)[descend]
+        return get_operator_value(data.ascend(ascend-1)[descend], match)
     elif isinstance(descend, list):
         return reduce(operator.getitem, [data.ascend(ascend)] + descend)
     raise JoltException()
 
 
 def match_re(spec_key: str, properties: PropertyHolder, key: str):
-    match = re.match(translate(spec_key), key)
-    if match:
-        properties.matches = match
-    return key if match else None
+    if isinstance(key, str):
+        match = re.match(translate(spec_key), key)
+        if match:
+            properties.matches = match
+        return key if match else None
+    return None
 
 
-def process_sub_amp(data: TreeManager, spec: TreeManager, properties: PropertyManager, v: str, lookup_offset=0):
-    return re.sub(r'&([0-9]*)(?!\()|&(?:\(([0-9]+)(?:, ?([0-9]+))*\))?', partial(process_amp, data, spec, properties, lookup_offset=lookup_offset), v)
+def process_sub_amp(data: TreeManager, spec: TreeManager, properties: PropertyManager, string: str, lookup_offset=0):
+    return re.sub(r'[&@]([0-9]*)(?!\()|[&@](?:\(([0-9]+)(?:, *([0-9a-zA-Z_]+))*\))?', partial(process_amp, data, spec, properties, lookup_offset=lookup_offset), string)
 
 
 def process_rhs_split(data: TreeManager, spec: TreeManager, properties: PropertyManager, lookup_offset=0) -> List[str]:
@@ -85,14 +102,14 @@ def shiftr(data: dict, spec: dict) -> dict:
         spec, data = process_queue.get()  # type: TreeManager, TreeManager
 
         # if the data is not a leaf node then try match against the spec
-        if spec.value is not None and data.value is not None:
+        if (isinstance(spec.value, dict) and data.value is not None) or isinstance(data.value, dict):
             # Cache keys so that each matched key can be removed (for certain match cases)
             data_keys = set(data.keys())
 
             for spec_key in spec.keys():
                 # Match exact keys
-                matches = set(filter(spec_key.__eq__, data_keys))
-                data_keys -= matches
+                literal_matches = set(filter(partial(literal_compare, spec_key), data_keys))
+                data_keys -= literal_matches
 
                 # First process $ matches
                 if spec_key == '$':
@@ -102,14 +119,13 @@ def shiftr(data: dict, spec: dict) -> dict:
                 # Match wildcard keys and return match objects for property caching
                 # Amp (&) resolution of the specification key will also occur here
                 wildcard_matches = set(filter(None.__ne__, map(lambda x: match_re(spec_key, properties[tuple(data.path + [x])], x), data_keys)))
-                matches |= wildcard_matches
                 data_keys -= wildcard_matches
 
                 # Try transform & and match
-                other_matches = set(filter(process_sub_amp(data, spec, properties, spec_key).__eq__, data_keys))
-                matches |= other_matches
+                other_matches = set(filter(partial(literal_compare, process_sub_amp(data, spec, properties, spec_key)), data_keys))
 
                 # Add next level of data that matched to be processed against the next level of the spec
+                matches = literal_matches | wildcard_matches | other_matches
                 if matches:
                     list(map(process_queue.put, [(spec[spec_key], data[key]) for key in matches]))
         else:
@@ -117,6 +133,6 @@ def shiftr(data: dict, spec: dict) -> dict:
             if isinstance(spec.value, dict):
                 [process_rhs(data, spec[hash_key], properties, result, hash_key[1:]) for hash_key in spec.keys() if hash_key.startswith('#')]
             else:
-                process_rhs(data.ascend(1), spec.ascend(1), properties, result, data.current_key)
+                process_rhs(data, spec, properties, result, data.value)
 
     return result

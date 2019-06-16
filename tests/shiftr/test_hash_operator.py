@@ -1,10 +1,13 @@
+from collections import defaultdict
+
 import pytest
-from pyjolt.transforms import shiftr
+from deepdiff import DeepDiff
+
+from pyjolt import shiftr
 
 
-@pytest.mark.skip
 def test_hash_default():
-    #  jolt/jolt-core/src/test/resources/json/shiftr/hashDefault.json
+    # jolt/jolt-core/src/test/resources/json/shiftr/hashDefault.json
     input_data = {
         "data": {
             "1234": {
@@ -39,10 +42,9 @@ def test_hash_default():
         }
     }
 
-    factory = shiftr.shiftr_factory(spec=spec)
-    output = factory.evaluate(data=input_data)
+    output = shiftr(input_data, spec)
 
-    assert expected_output == output
+    assert DeepDiff(expected_output, output, ignore_order=True, report_repetition=True, ignore_type_in_groups=[(dict, defaultdict)]) == {}
 
 
 @pytest.mark.skip
@@ -77,10 +79,9 @@ def test_map_to_list1():
         ]
     }
 
-    factory = shiftr.shiftr_factory(spec=spec)
-    output = factory.evaluate(data=input_data)
+    output = shiftr(input_data, spec)
 
-    assert expected_output == output
+    assert DeepDiff(expected_output, output, ignore_order=True, report_repetition=True, ignore_type_in_groups=[(dict, defaultdict)]) == {}
 
 
 @pytest.mark.skip
@@ -142,7 +143,6 @@ def test_map_to_list2():
         }
     }
 
-    factory = shiftr.shiftr_factory(spec=spec)
-    output = factory.evaluate(data=input_data)
+    output = shiftr(input_data, spec)
 
-    assert expected_output == output
+    assert DeepDiff(expected_output, output, ignore_order=True, report_repetition=True, ignore_type_in_groups=[(dict, defaultdict)]) == {}
