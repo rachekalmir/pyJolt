@@ -1,12 +1,20 @@
 import operator
 import re
 from distutils.util import strtobool
-from functools import reduce, partial
+from functools import reduce, partial, cmp_to_key
 from queue import Queue
 from typing import List, Match, Union
 
 from pyjolt.util import translate
 from pyjolt.util.tree_manager import TreeManager, recursive_dict, PropertyManager, PropertyHolder
+
+
+def spec_key_comparator(key_a: str, key_b: str) -> int:
+    if key_a == '*':
+        return 1
+    elif key_b == '*':
+        return -1
+    return key_a.__lt__(key_b)
 
 
 class JoltException(Exception):
@@ -42,7 +50,7 @@ def process_amp(data: TreeManager, spec: TreeManager, properties: PropertyManage
             return get_operator_value(data.ascend(ascend), match)
         return properties[data.ascend(ascend).path].matches.groups()[descend - 1]
     elif isinstance(descend, str):
-        return get_operator_value(data.ascend(ascend-1)[descend], match)
+        return get_operator_value(data.ascend(ascend - 1)[descend], match)
     elif isinstance(descend, list):
         return reduce(operator.getitem, [data.ascend(ascend)] + descend)
     raise JoltException()
@@ -58,7 +66,8 @@ def match_re(spec_key: str, properties: PropertyHolder, key: str):
 
 
 def process_sub_amp(data: TreeManager, spec: TreeManager, properties: PropertyManager, string: str, lookup_offset=0):
-    return re.sub(r'[&@]([0-9]*)(?!\()|[&@](?:\(([0-9]+)(?:, *([0-9a-zA-Z_]+))*\))?', partial(process_amp, data, spec, properties, lookup_offset=lookup_offset), string)
+    return re.sub(r'[&@]([0-9]*)(?!\()|[&@](?:\(([0-9]+)(?:, *([0-9a-zA-Z_]+))*\))?', partial(process_amp, data, spec, properties, lookup_offset=lookup_offset),
+                  string)
 
 
 def process_rhs_split(data: TreeManager, spec: TreeManager, properties: PropertyManager, lookup_offset=0) -> List[str]:
@@ -106,7 +115,7 @@ def shiftr(data: dict, spec: dict) -> dict:
             # Cache keys so that each matched key can be removed (for certain match cases)
             data_keys = set(data.keys())
 
-            for spec_key in spec.keys():
+            for spec_key in sorted(list(spec.keys()), key=cmp_to_key(spec_key_comparator)):
                 # Match exact keys
                 literal_matches = set(filter(partial(literal_compare, spec_key), data_keys))
                 data_keys -= literal_matches
@@ -127,7 +136,8 @@ def shiftr(data: dict, spec: dict) -> dict:
                 # Add next level of data that matched to be processed against the next level of the spec
                 matches = literal_matches | wildcard_matches | other_matches
                 if matches:
-                    list(map(process_queue.put, [(spec[spec_key], data[key]) for key in matches]))
+                    processors = [(spec[spec_key], data[key]) for key in matches]
+                    list(map(process_queue.put, processors))
         else:
             # Catch special cases of the # that is allowed in the spec beyond the end of the data
             if isinstance(spec.value, dict):
