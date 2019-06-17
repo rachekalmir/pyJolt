@@ -1,17 +1,4 @@
 import re
-from collections import defaultdict
-
-
-class UnsortedList(list):
-    def __init__(self, data=None):
-        super().__init__(data if data is not None else [])
-
-    def __eq__(self, other):
-        return sorted(self) == sorted(other)
-
-
-def recursive_dict():
-    return defaultdict(recursive_dict)
 
 
 def translate(pat):

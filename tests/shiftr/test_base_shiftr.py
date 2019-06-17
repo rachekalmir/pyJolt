@@ -2,11 +2,11 @@ from collections import defaultdict
 
 from deepdiff import DeepDiff
 
-from pyjolt.transforms.shiftr_rewrite import shiftr
+from pyjolt import Jolt
 
 
 def test_basic_shiftr():
-    base_data = {
+    input_data = {
         "rating": {
             "quality": {
                 "value": 3,
@@ -30,13 +30,13 @@ def test_basic_shiftr():
             },
         },
     }
-    output = shiftr(base_data, spec)
+    output = Jolt(input_data).shift(spec).data
 
     assert DeepDiff(expected_output, output, ignore_order=True, report_repetition=True, ignore_type_in_groups=[(dict, defaultdict)]) == {}
 
 
 def test_amp_subkey_shiftr():
-    base_data = {
+    input_data = {
         "foo": {
             "bar": {
                 "baz": 0,  # & 0 = baz, & 1 = bar, & 2 = foo
@@ -63,13 +63,13 @@ def test_amp_subkey_shiftr():
         "Spec": 2,
         "or": [3, 4],
     }
-    output = shiftr(base_data, spec)
+    output = Jolt(input_data).shift(spec).data
 
     assert DeepDiff(expected_output, output, ignore_order=True, report_repetition=True, ignore_type_in_groups=[(dict, defaultdict)]) == {}
 
 
 def test_wildcard_multi_shiftr():
-    base_data = {
+    input_data = {
         "rating": {
             "primary": {
                 "value": 3,  # want this value to goto output path "Rating"
@@ -136,6 +136,6 @@ def test_wildcard_multi_shiftr():
             },
         },
     }
-    output = shiftr(base_data, spec)
+    output = Jolt(input_data).shift(spec).data
 
     assert DeepDiff(expected_output, output, ignore_order=True, report_repetition=True, ignore_type_in_groups=[(dict, defaultdict)]) == {}

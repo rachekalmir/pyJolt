@@ -3,7 +3,7 @@ from collections import defaultdict
 import pytest
 from deepdiff import DeepDiff
 
-from pyjolt import shiftr
+from pyjolt import Jolt
 
 
 def test_hash_default():
@@ -42,7 +42,7 @@ def test_hash_default():
         }
     }
 
-    output = shiftr(input_data, spec)
+    output = Jolt(input_data).shift(spec).data
 
     assert DeepDiff(expected_output, output, ignore_order=True, report_repetition=True, ignore_type_in_groups=[(dict, defaultdict)]) == {}
 
@@ -79,7 +79,7 @@ def test_map_to_list1():
         ]
     }
 
-    output = shiftr(input_data, spec)
+    output = Jolt(input_data).shift(spec).data
 
     assert DeepDiff(expected_output, output, ignore_order=True, report_repetition=True, ignore_type_in_groups=[(dict, defaultdict)]) == {}
 
@@ -143,6 +143,6 @@ def test_map_to_list2():
         }
     }
 
-    output = shiftr(input_data, spec)
+    output = Jolt(input_data).shift(spec).data
 
     assert DeepDiff(expected_output, output, ignore_order=True, report_repetition=True, ignore_type_in_groups=[(dict, defaultdict)]) == {}
