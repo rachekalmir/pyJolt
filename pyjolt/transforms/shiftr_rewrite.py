@@ -5,7 +5,7 @@ from functools import reduce, partial, cmp_to_key
 from queue import Queue
 from typing import List, Match, Union
 
-from exceptions import JoltException
+from pyjolt.exceptions import JoltException
 from pyjolt.util import translate
 from pyjolt.util.tree_manager import TreeManager, PropertyManager, PropertyHolder, ResultManager
 
@@ -117,7 +117,8 @@ def shiftr(data: dict, spec: dict) -> dict:
 
                 # First process $ matches
                 if spec_key == '$':
-                    process_rhs(data, spec[spec_key], properties, result, data.current_key, lookup_offset=1)
+                    for spec_process in spec[spec_key] if isinstance(spec[spec_key], list) else [spec[spec_key]]:
+                        process_rhs(data, spec_process, properties, result, data.current_key, lookup_offset=1)
                     continue
                 if spec_key == '@':
                     process_rhs(data, spec[spec_key], properties, result, data.value, lookup_offset=1)

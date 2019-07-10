@@ -2,7 +2,7 @@ import itertools
 from collections import defaultdict
 from typing import Union, List, Dict
 
-from exceptions import JoltException
+from pyjolt.exceptions import JoltException
 
 
 def pairwise(iterable):
@@ -21,6 +21,7 @@ def type_generator(item):
 
 
 def id_generator():
+    """Generator function to generate numbers from 0 onwards"""
     start_value = 0
     while True:
         yield start_value
@@ -28,13 +29,15 @@ def id_generator():
 
 
 class AutoDefaultDict(defaultdict):
-    def __init__(self, f_of_x):
-        super().__init__(None)  # base class doesn't get a factory
-        self.f_of_x = f_of_x()  # save f(x)
+    """Default dictionary that calls the specified function to get the new value."""
 
-    def __missing__(self, key):  # called when a default needed
-        ret = next(self.f_of_x)  # calculate default value
-        self[key] = ret  # and install it in the dict
+    def __init__(self, f_of_x):
+        super().__init__(None)  # Create the base defaultdict class with no default
+        self.f_of_x = f_of_x  # Save the function
+
+    def __missing__(self, key):  # __missing__ is called when a default value is needed
+        ret = next(self.f_of_x)  # Calculate default value
+        self[key] = ret  # Save the default value in the local dictionary
         return ret
 
 
@@ -55,10 +58,8 @@ class ResultManager(object):
                     dv[item] = value
                 break
 
-            # elif isinstance(dv, dict):
-            #     dv[item] = dv = type_generator(next_item)
             elif isinstance(dv, list) and len(dv) <= item:
-                # Special case for array indexing to extend the array
+                # Special case for array indexing to extend the array thereby ensuring no IndexOutOfBounds exception is encountered
                 dv += [None] * (item + 1 - len(dv))
 
             if isinstance(dv, dict) and dv.get(item) is not None:
@@ -72,7 +73,7 @@ class ResultManager(object):
 class PropertyHolder(object):
     def __init__(self, matches: list = None):
         self.matches = [] if matches is None else matches
-        self.array_bind = AutoDefaultDict(id_generator)
+        self.array_bind = AutoDefaultDict(id_generator())
 
     def __repr__(self):
         return 'PropertyHolder({matches})'.format(matches=self.matches)
