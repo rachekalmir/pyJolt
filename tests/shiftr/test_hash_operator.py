@@ -47,7 +47,6 @@ def test_hash_default():
     assert DeepDiff(expected_output, output, ignore_order=True, report_repetition=True, ignore_type_in_groups=[(dict, defaultdict)]) == {}
 
 
-@pytest.mark.skip
 def test_map_to_list1():
     #  jolt/jolt-core/src/test/resources/json/shiftr/mapToList.json
     input_data = {
@@ -59,7 +58,7 @@ def test_map_to_list1():
     spec = {
         "ratings": {
             "*": {
-                # #2 means go two levels up the tree, and ask the "ratings" node, how many of its children have been matched
+                # [#2] means go two levels up the tree, and ask the "ratings" node, how many of its children have been matched
                 #  this allows us to put the Name and the Value into the same object in the Ratings array
                 "$": "Ratings[#2].Name",
                 "@": "Ratings[#2].Value"

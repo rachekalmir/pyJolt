@@ -1,14 +1,78 @@
+import itertools
 from collections import defaultdict
 from typing import Union, List, Dict
 
+from exceptions import JoltException
 
-def recursive_dict():
-    return defaultdict(recursive_dict)
+
+def pairwise(iterable):
+    """s -> (s0,s1), (s1,s2), (s2, s3), ..."""
+    a, b = itertools.tee(iterable)
+    next(b, None)
+    return itertools.zip_longest(a, b)
+
+
+def type_generator(item):
+    if isinstance(item, str):
+        return {}
+    elif isinstance(item, int):
+        return []
+    raise JoltException()
+
+
+def id_generator():
+    start_value = 0
+    while True:
+        yield start_value
+        start_value += 1
+
+
+class AutoDefaultDict(defaultdict):
+    def __init__(self, f_of_x):
+        super().__init__(None)  # base class doesn't get a factory
+        self.f_of_x = f_of_x()  # save f(x)
+
+    def __missing__(self, key):  # called when a default needed
+        ret = next(self.f_of_x)  # calculate default value
+        self[key] = ret  # and install it in the dict
+        return ret
+
+
+class ResultManager(object):
+    def __init__(self):
+        self._data = {}
+
+    def assign(self, path_list: list, value):
+        dv = self._data
+        for item, next_item in pairwise(path_list):
+            if next_item is None:
+                # If next item is None then this is where the assignment to the value will take place
+                if isinstance(dv, list):
+                    dv[item] += [value]
+                elif isinstance(dv, dict) and dv.get(item) is not None:
+                    dv[item] = [dv[item], value]
+                else:
+                    dv[item] = value
+                break
+
+            # elif isinstance(dv, dict):
+            #     dv[item] = dv = type_generator(next_item)
+            elif isinstance(dv, list) and len(dv) <= item:
+                # Special case for array indexing to extend the array
+                dv += [None] * (item + 1 - len(dv))
+
+            if isinstance(dv, dict) and dv.get(item) is not None:
+                dv = dv[item]
+            elif isinstance(dv, list) and len(dv) > item and dv[item] is not None:
+                dv = dv[item]
+            else:
+                dv[item] = dv = type_generator(next_item)
 
 
 class PropertyHolder(object):
     def __init__(self, matches: list = None):
         self.matches = [] if matches is None else matches
+        self.array_bind = AutoDefaultDict(id_generator)
 
     def __repr__(self):
         return 'PropertyHolder({matches})'.format(matches=self.matches)
@@ -53,6 +117,8 @@ class TreeManager(object):
         for i in path:
             if isinstance(self._dict, dict):
                 self._dict = self._dict[i]
+            elif isinstance(self._dict, list):
+                self._dict = self._dict[int(i)]
             elif self._dict == i:
                 self._dict = None
             else:

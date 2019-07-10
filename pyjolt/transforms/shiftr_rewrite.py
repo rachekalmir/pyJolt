@@ -5,8 +5,9 @@ from functools import reduce, partial, cmp_to_key
 from queue import Queue
 from typing import List, Match, Union
 
+from exceptions import JoltException
 from pyjolt.util import translate
-from pyjolt.util.tree_manager import TreeManager, recursive_dict, PropertyManager, PropertyHolder
+from pyjolt.util.tree_manager import TreeManager, PropertyManager, PropertyHolder, ResultManager
 
 
 def spec_key_comparator(key_a: str, key_b: str) -> int:
@@ -15,10 +16,6 @@ def spec_key_comparator(key_a: str, key_b: str) -> int:
     elif key_b == '*':
         return -1
     return key_a.__lt__(key_b)
-
-
-class JoltException(Exception):
-    pass
 
 
 def get_operator_value(tree: TreeManager, match: Match) -> str:
@@ -41,10 +38,15 @@ def process_amp(data: TreeManager, spec: TreeManager, properties: PropertyManage
 
     match: is the regular expression match and groups should 3 match groups &{0} | &({0},{0})
     """
+    if match.group()[0] == '[':
+        ascend = int(re.match(r'\[#([0-9]+)\]', match.group()).groups()[0])
+        # Use a default dict in the property class to return the index
+        return properties[data.path[:-ascend + 1]].array_bind[data.current_key]
+
     ascend = int(match.groups()[0] or match.groups()[1] or 0) - lookup_offset
     descend = int(match.groups()[2] or 0) if (match.groups()[2] or '0').isnumeric() else match.groups()[2]
 
-    # return the processed pattern result
+    # Return the processed &,@ pattern result by ascending and descending the data tree
     if isinstance(descend, int):
         if descend == 0:
             return get_operator_value(data.ascend(ascend), match)
@@ -66,33 +68,26 @@ def match_re(spec_key: str, properties: PropertyHolder, key: str):
 
 
 def process_sub_amp(data: TreeManager, spec: TreeManager, properties: PropertyManager, string: str, lookup_offset=0):
+    matches = list(re.finditer(r'[&@]([0-9]*)(?!\()|[&@](?:\(([0-9]+)(?:, *([0-9a-zA-Z_]+))*\))?|^\[#[0-9]+\]$', string))
+    if len(matches) == 1:
+        return process_amp(data, spec, properties, matches[0], lookup_offset=lookup_offset)
+    # TODO: this can probably be optimised by using matches instead of re.sub
     return re.sub(r'[&@]([0-9]*)(?!\()|[&@](?:\(([0-9]+)(?:, *([0-9a-zA-Z_]+))*\))?', partial(process_amp, data, spec, properties, lookup_offset=lookup_offset),
                   string)
 
 
 def process_rhs_split(data: TreeManager, spec: TreeManager, properties: PropertyManager, lookup_offset=0) -> List[str]:
-    # Process Ampersand (&)
-    matches = [process_sub_amp(data, spec, properties, v, lookup_offset) for v in spec.value.split('.')]
-    return matches
+    # Process & and $
+    # re.sub is used to replace Key[#2] with Key.[#2] for compatibility with Jolt protocol
+    return [process_sub_amp(data, spec, properties, v, lookup_offset) for v in re.sub(r'(\[[^]]+\])', r'.\g<1>', spec.value).split('.')]
 
 
-def process_rhs(data: TreeManager, spec: TreeManager, properties: PropertyManager, result, value, lookup_offset=0):
+def process_rhs(data: TreeManager, spec: TreeManager, properties: PropertyManager, result: ResultManager, value, lookup_offset=0):
     """
     When the data runs and no more matches can be made against the data, then the rest of the spec is RHS spec.
     """
-
-    # if this is a leaf node node process the RHS (leaf) spec and save the value in result
-    spec_value_split = process_rhs_split(data, spec, properties, lookup_offset)
-    v = reduce(operator.getitem, [result] + spec_value_split[:-1])  # type: Dict[str, Any]
-
-    # If a second key maps to the same final key then turn it into an array
-    t = v.get(spec_value_split[-1])
-    if t is None:
-        v[spec_value_split[-1]] = value
-    elif isinstance(t, list):
-        v[spec_value_split[-1]] += [value]
-    else:
-        v[spec_value_split[-1]] = [t, value]
+    # If this is a leaf node node process the RHS (leaf) spec and save the value in result
+    result.assign(process_rhs_split(data, spec, properties, lookup_offset), value)
 
 
 def shiftr(data: dict, spec: dict) -> dict:
@@ -100,7 +95,7 @@ def shiftr(data: dict, spec: dict) -> dict:
     spec_manager = TreeManager(spec, [])
     process_queue = Queue()
 
-    result = recursive_dict()
+    result = ResultManager()
 
     # TODO: walk through data and spec
     process_queue.put((spec_manager, data_manager))
@@ -122,7 +117,10 @@ def shiftr(data: dict, spec: dict) -> dict:
 
                 # First process $ matches
                 if spec_key == '$':
-                    process_rhs(data, spec['$'], properties, result, data.current_key, lookup_offset=1)
+                    process_rhs(data, spec[spec_key], properties, result, data.current_key, lookup_offset=1)
+                    continue
+                if spec_key == '@':
+                    process_rhs(data, spec[spec_key], properties, result, data.value, lookup_offset=1)
                     continue
 
                 # Match wildcard keys and return match objects for property caching
@@ -145,4 +143,4 @@ def shiftr(data: dict, spec: dict) -> dict:
             else:
                 process_rhs(data, spec, properties, result, data.value)
 
-    return result
+    return result._data

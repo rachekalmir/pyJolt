@@ -1,0 +1,2 @@
+class JoltException(Exception):
+    pass
