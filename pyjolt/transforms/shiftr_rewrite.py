@@ -79,7 +79,7 @@ def process_sub_amp(data: TreeManager, spec: TreeManager, properties: PropertyMa
 def process_rhs_split(data: TreeManager, spec: TreeManager, properties: PropertyManager, lookup_offset=0) -> List[str]:
     # Process & and $
     # re.sub is used to replace Key[#2] with Key.[#2] for compatibility with Jolt protocol
-    return [process_sub_amp(data, spec, properties, v, lookup_offset) for v in re.sub(r'(\[[^]]+\])', r'.\g<1>', spec.value).split('.')]
+    return [process_sub_amp(data, spec, properties, v, lookup_offset) for v in re.sub(r'(?<!\.)(\[[^]]+\])', r'.\g<1>', spec.value).split('.')]
 
 
 def process_rhs(data: TreeManager, spec: TreeManager, properties: PropertyManager, result: ResultManager, value, lookup_offset=0):
@@ -115,13 +115,12 @@ def shiftr(data: dict, spec: dict) -> dict:
                 literal_matches = set(filter(partial(literal_compare, spec_key), data_keys))
                 data_keys -= literal_matches
 
-                # First process $ matches
-                if spec_key == '$':
-                    for spec_process in spec[spec_key] if isinstance(spec[spec_key], list) else [spec[spec_key]]:
-                        process_rhs(data, spec_process, properties, result, data.current_key, lookup_offset=1)
-                    continue
-                if spec_key == '@':
-                    process_rhs(data, spec[spec_key], properties, result, data.value, lookup_offset=1)
+                # First process $ and @ matches
+                # $ - use current data key as value and place into result
+                # @ - use current data value as value and place into result
+                if spec_key in ('$', '@'):
+                    for spec_process in spec[spec_key] if isinstance(spec[spec_key].value, list) else [spec[spec_key]]:
+                        process_rhs(data, spec_process, properties, result, data.current_key if spec_key == '$' else data.value, lookup_offset=1)
                     continue
 
                 # Match wildcard keys and return match objects for property caching

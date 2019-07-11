@@ -1,6 +1,5 @@
 from collections import defaultdict
 
-import pytest
 from deepdiff import DeepDiff
 
 from pyjolt import Jolt
@@ -83,7 +82,6 @@ def test_map_to_list1():
     assert DeepDiff(expected_output, output, ignore_order=True, report_repetition=True, ignore_type_in_groups=[(dict, defaultdict)]) == {}
 
 
-@pytest.mark.skip
 def test_map_to_list2():
     #  jolt/jolt-core/src/test/resources/json/shiftr/mapToList2.json
     input_data = {

@@ -110,11 +110,19 @@ class Tree(object):
 
 
 class TreeManager(object):
+    """
+    Manager object to keep track of where you are in a dictionary tree object.
+
+    self._tree is the full tree
+    self.path is the current patch in the object
+    self._dict is the local cached object computed using self.path on self._tree
+    """
+
     def __init__(self, tree: Union[Tree, Dict], path: List[str]):
         self._tree = tree if isinstance(tree, Tree) else Tree(tree)
         self.path = path
-        # self._dict = reduce(operator.getitem, [self._tree.dictionary] + path)
         self._dict = self._tree.dictionary
+
         for i in path:
             if isinstance(self._dict, dict):
                 self._dict = self._dict[i]
@@ -130,8 +138,14 @@ class TreeManager(object):
         return TreeManager(self._tree, self.path + [item])
 
     def __iter__(self):
-        for key, value in self._dict.items():
-            yield key, TreeManager(self._tree, self.path + [key])
+        if isinstance(self._dict, dict):
+            for key, value in self._dict.items():
+                yield key, TreeManager(self._tree, self.path + [key])
+        elif isinstance(self._dict, list):
+            for index, _ in enumerate(self._dict):
+                yield TreeManager(self._tree, self.path + [index])
+        else:
+            raise JoltException()
 
     def __repr__(self):
         return 'TreeManager(' + repr(self.current_key) + ', ' + repr(self._dict) + ')'
