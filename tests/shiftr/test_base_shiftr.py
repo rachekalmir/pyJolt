@@ -1,8 +1,5 @@
-from collections import defaultdict
-
-from deepdiff import DeepDiff
-
 from pyjolt import Jolt
+from tests.shiftr import assert_shiftr
 
 
 def test_basic_shiftr():
@@ -31,8 +28,7 @@ def test_basic_shiftr():
         },
     }
     output = Jolt(input_data).shift(spec).data
-
-    assert DeepDiff(expected_output, output, ignore_order=True, report_repetition=True, ignore_type_in_groups=[(dict, defaultdict)]) == {}
+    assert_shiftr(expected_output, output)
 
 
 def test_amp_subkey_shiftr():
@@ -64,8 +60,7 @@ def test_amp_subkey_shiftr():
         "or": [3, 4],
     }
     output = Jolt(input_data).shift(spec).data
-
-    assert DeepDiff(expected_output, output, ignore_order=True, report_repetition=True, ignore_type_in_groups=[(dict, defaultdict)]) == {}
+    assert_shiftr(expected_output, output)
 
 
 def test_wildcard_multi_shiftr():
@@ -137,5 +132,4 @@ def test_wildcard_multi_shiftr():
         },
     }
     output = Jolt(input_data).shift(spec).data
-
-    assert DeepDiff(expected_output, output, ignore_order=True, report_repetition=True, ignore_type_in_groups=[(dict, defaultdict)]) == {}
+    assert_shiftr(expected_output, output)

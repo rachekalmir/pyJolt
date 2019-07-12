@@ -1,8 +1,5 @@
-from collections import defaultdict
-
-from deepdiff import DeepDiff
-
 from pyjolt import Jolt
+from tests.shiftr import assert_shiftr
 
 
 def test_hash_default():
@@ -42,8 +39,7 @@ def test_hash_default():
     }
 
     output = Jolt(input_data).shift(spec).data
-
-    assert DeepDiff(expected_output, output, ignore_order=True, report_repetition=True, ignore_type_in_groups=[(dict, defaultdict)]) == {}
+    assert_shiftr(expected_output, output)
 
 
 def test_map_to_list1():
@@ -78,8 +74,7 @@ def test_map_to_list1():
     }
 
     output = Jolt(input_data).shift(spec).data
-
-    assert DeepDiff(expected_output, output, ignore_order=True, report_repetition=True, ignore_type_in_groups=[(dict, defaultdict)]) == {}
+    assert_shiftr(expected_output, output)
 
 
 def test_map_to_list2():
@@ -141,5 +136,4 @@ def test_map_to_list2():
     }
 
     output = Jolt(input_data).shift(spec).data
-
-    assert DeepDiff(expected_output, output, ignore_order=True, report_repetition=True, ignore_type_in_groups=[(dict, defaultdict)]) == {}
+    assert_shiftr(expected_output, output)
