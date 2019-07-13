@@ -35,8 +35,7 @@ def test_basic_special_character_escape():
         "*G": "star",
         "#H": "hash"
     }
-    output = Jolt(input_data).shift(spec).data
-    assert_shiftr(expected_output, output)
+    assert_shiftr(expected_output, Jolt(input_data).shift(spec).data)
 
 
 def test_advanced_special_character_escape():
@@ -72,5 +71,4 @@ def test_advanced_special_character_escape():
         "ggg*G": "star",
         "hhh#H": "hash"
     }
-    output = Jolt(input_data).shift(spec).data
-    assert_shiftr(expected_output, output)
+    assert_shiftr(expected_output, Jolt(input_data).shift(spec).data)

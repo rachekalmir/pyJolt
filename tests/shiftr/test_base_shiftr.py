@@ -27,8 +27,7 @@ def test_basic_shiftr():
             },
         },
     }
-    output = Jolt(input_data).shift(spec).data
-    assert_shiftr(expected_output, output)
+    assert_shiftr(expected_output, Jolt(input_data).shift(spec).data)
 
 
 def test_amp_subkey_shiftr():
@@ -59,8 +58,7 @@ def test_amp_subkey_shiftr():
         "Spec": 2,
         "or": [3, 4],
     }
-    output = Jolt(input_data).shift(spec).data
-    assert_shiftr(expected_output, output)
+    assert_shiftr(expected_output, Jolt(input_data).shift(spec).data)
 
 
 def test_wildcard_multi_shiftr():
@@ -131,5 +129,4 @@ def test_wildcard_multi_shiftr():
             },
         },
     }
-    output = Jolt(input_data).shift(spec).data
-    assert_shiftr(expected_output, output)
+    assert_shiftr(expected_output, Jolt(input_data).shift(spec).data)

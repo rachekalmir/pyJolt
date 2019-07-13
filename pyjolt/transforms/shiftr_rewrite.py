@@ -27,9 +27,11 @@ def get_operator_value(tree: TreeManager, match: Match) -> str:
 
 
 def literal_compare(spec_key: str, data_key: Union[str, bool]):
+    # If data_key is a boolean then compare by converting spec_key to a boolean also
     if isinstance(data_key, bool):
         return strtobool(spec_key) == data_key
-    return spec_key == data_key
+    # Otherwise compare spec_key and data_key directly after replacing escaped operators
+    return re.sub(r'\\([$@&[\]*#])', r'\g<1>', spec_key) == data_key
 
 
 def process_amp(data: TreeManager, spec: TreeManager, properties: PropertyManager, match: Match, lookup_offset=0) -> str:
@@ -42,6 +44,9 @@ def process_amp(data: TreeManager, spec: TreeManager, properties: PropertyManage
         ascend = int(re.match(r'\[#([0-9]+)\]', match.group()).groups()[0])
         # Use a default dict in the property class to return the index
         return properties[data.path[:-ascend + 1]].array_bind[data.current_key]
+    elif match.group()[0] == '\\':
+        # Catch the case where \ is used to escape an operator []@#$& or \ itself
+        return match.group()[1:]
 
     ascend = int(match.groups()[0] or match.groups()[1] or 0) - lookup_offset
     descend = int(match.groups()[2] or 0) if (match.groups()[2] or '0').isnumeric() else match.groups()[2]
@@ -68,18 +73,19 @@ def match_re(spec_key: str, properties: PropertyHolder, key: str):
 
 
 def process_sub_amp(data: TreeManager, spec: TreeManager, properties: PropertyManager, string: str, lookup_offset=0):
-    matches = list(re.finditer(r'[&@]([0-9]*)(?!\()|[&@](?:\(([0-9]+)(?:, *([0-9a-zA-Z_]+))*\))?|^\[#[0-9]+\]$', string))
+    matches = list(re.finditer(r'(?<!\\)[&@](?:([0-9]*)(?!\()|(?:\(([0-9]+)(?:, *([0-9a-zA-Z_]+))*\))?)|^\[#[0-9]+\]$', string))
     if len(matches) == 1:
         return process_amp(data, spec, properties, matches[0], lookup_offset=lookup_offset)
     # TODO: this can probably be optimised by using matches instead of re.sub
-    return re.sub(r'[&@]([0-9]*)(?!\()|[&@](?:\(([0-9]+)(?:, *([0-9a-zA-Z_]+))*\))?', partial(process_amp, data, spec, properties, lookup_offset=lookup_offset),
+    return re.sub(r'(?<!\\)[&@](?:([0-9]*)(?!\()|(?:\(([0-9]+)(?:, *([0-9a-zA-Z_]+))*\))?)|(?<!\\)\\[\[\]@#$&*]',
+                  partial(process_amp, data, spec, properties, lookup_offset=lookup_offset),
                   string)
 
 
 def process_rhs_split(data: TreeManager, spec: TreeManager, properties: PropertyManager, lookup_offset=0) -> List[str]:
     # Process & and $
     # re.sub is used to replace Key[#2] with Key.[#2] for compatibility with Jolt protocol
-    return [process_sub_amp(data, spec, properties, v, lookup_offset) for v in re.sub(r'(?<!\.)(\[[^]]+\])', r'.\g<1>', spec.value).split('.')]
+    return [process_sub_amp(data, spec, properties, v, lookup_offset) for v in re.sub(r'(?<!\.|\\)(\[[^]]+\])', r'.\g<1>', spec.value).split('.')]
 
 
 def process_rhs(data: TreeManager, spec: TreeManager, properties: PropertyManager, result: ResultManager, value, lookup_offset=0):
@@ -97,7 +103,7 @@ def shiftr(data: dict, spec: dict) -> dict:
 
     result = ResultManager()
 
-    # TODO: walk through data and spec
+    # Walk through data and spec
     process_queue.put((spec_manager, data_manager))
 
     properties = PropertyManager()
@@ -115,7 +121,7 @@ def shiftr(data: dict, spec: dict) -> dict:
                 literal_matches = set(filter(partial(literal_compare, spec_key), data_keys))
                 data_keys -= literal_matches
 
-                # First process $ and @ matches
+                # First process LHS $ and @ matches
                 # $ - use current data key as value and place into result
                 # @ - use current data value as value and place into result
                 if spec_key in ('$', '@'):
@@ -134,8 +140,7 @@ def shiftr(data: dict, spec: dict) -> dict:
                 # Add next level of data that matched to be processed against the next level of the spec
                 matches = literal_matches | wildcard_matches | other_matches
                 if matches:
-                    processors = [(spec[spec_key], data[key]) for key in matches]
-                    list(map(process_queue.put, processors))
+                    list(map(process_queue.put, [(spec[spec_key], data[key]) for key in matches]))
         else:
             # Catch special cases of the # that is allowed in the spec beyond the end of the data
             if isinstance(spec.value, dict):

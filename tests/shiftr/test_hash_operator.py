@@ -37,9 +37,7 @@ def test_hash_default():
             "35": "enabled"
         }
     }
-
-    output = Jolt(input_data).shift(spec).data
-    assert_shiftr(expected_output, output)
+    assert_shiftr(expected_output, Jolt(input_data).shift(spec).data)
 
 
 def test_map_to_list1():
@@ -72,9 +70,7 @@ def test_map_to_list1():
             }
         ]
     }
-
-    output = Jolt(input_data).shift(spec).data
-    assert_shiftr(expected_output, output)
+    assert_shiftr(expected_output, Jolt(input_data).shift(spec).data)
 
 
 def test_map_to_list2():
@@ -134,6 +130,4 @@ def test_map_to_list2():
             }
         }
     }
-
-    output = Jolt(input_data).shift(spec).data
-    assert_shiftr(expected_output, output)
+    assert_shiftr(expected_output, Jolt(input_data).shift(spec).data)
