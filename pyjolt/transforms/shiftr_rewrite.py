@@ -186,7 +186,7 @@ def shiftr(data: dict, spec: dict) -> dict:
             if isinstance(spec.value, dict):
                 [process_rhs(data, spec[hash_key], properties, result, hash_key[1:]) for hash_key in spec.keys() if hash_key.startswith('#')]
             else:
-                for idx, spec_enum in enumerate(spec) if isinstance(spec.value, list) else [(0, spec)]:
+                for spec_enum in spec if isinstance(spec.value, list) else [spec]:
                     process_rhs(data, spec_enum, properties, result, data.value)
 
     return result._data
