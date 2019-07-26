@@ -53,7 +53,10 @@ class ResultManager(object):
                 if isinstance(dv, list):
                     dv[item] += [value]
                 elif isinstance(dv, dict) and dv.get(item) is not None:
-                    dv[item] = [dv[item], value]
+                    if isinstance(dv[item], list):
+                        dv[item] += [value]
+                    else:
+                        dv[item] = [dv[item], value]
                 else:
                     dv[item] = value
                 break
