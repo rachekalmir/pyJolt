@@ -84,6 +84,9 @@ def match_re(spec_key: str, property_holder: PropertyHolder, key: str):
         if match:
             property_holder.matches = [key] + list(match.groups())
             return key
+    # if the data key comes from a list instance it will be of int type
+    elif isinstance(key, int) and spec_key == '*':
+        return key
     return None
 
 

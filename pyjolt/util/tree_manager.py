@@ -157,7 +157,7 @@ class TreeManager(object):
         if isinstance(self._dict, dict):
             return self._dict.keys()
         elif isinstance(self._dict, list):
-            return self._dict
+            return range(len(self._dict))
         return [self._dict]
 
     @property
