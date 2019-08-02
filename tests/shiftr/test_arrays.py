@@ -2,6 +2,21 @@ from pyjolt import Jolt
 from tests.shiftr import assert_shiftr
 
 
+def test_array_explicit_key():
+    input_data = {
+        "Photos": ["AAA.jpg", "BBB.jpg"]
+    }
+    spec = {
+        "Photos": {
+            "1": "photo-&-url"
+        }
+    }
+    expected_output = {
+        "photo-1-url": "BBB.jpg"
+    }
+    assert_shiftr(expected_output, Jolt(input_data).shift(spec).data)
+    
+
 def test_array_mismatch():
     # Context: Shiftr will only operate if / when it finds matches
     # Purpose: Verify that Shiftr operates even when it is faced with array mismatches
