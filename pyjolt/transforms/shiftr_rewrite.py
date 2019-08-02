@@ -6,7 +6,7 @@ from queue import Queue
 from typing import List, Match, Union
 
 from pyjolt.exceptions import JoltException
-from pyjolt.util import translate
+from pyjolt.util import translate, string_return_decorator
 from pyjolt.util.tree_manager import TreeManager, PropertyManager, PropertyHolder, ResultManager
 
 
@@ -36,6 +36,11 @@ def literal_compare(spec_key: str, data_key: Union[str, bool]):
     # If data_key is a boolean then compare by converting spec_key to a boolean also
     if isinstance(data_key, bool):
         return strtobool(spec_key) == data_key
+    elif isinstance(data_key, int):
+        try:
+            return int(spec_key) == data_key
+        except ValueError:
+            return False
     # Otherwise compare spec_key and data_key directly after replacing Jolt operators @,$,&,[]
     return re.sub(r'\\([$@&[\]*#])', r'\g<1>', spec_key) == data_key
 
@@ -102,11 +107,14 @@ def process_sub_amp(data: TreeManager, spec: TreeManager, properties: PropertyMa
     :return:
     """
     matches = list(re.finditer(r'(?<!\\)[&@$](?:([0-9]*)(?!\()|(?:\(([0-9]+)(?:, *([0-9a-zA-Z_]+))*\))?)|^\[#[0-9]+\]$', string))
-    if len(matches) == 1:
+    # If there is only one match and the match is the full string then return the type contained downstream
+    if len(matches) == 1 and (len(matches[0].group()) == len(string) or string.startswith('[')):
         return process_amp(data, spec, properties, matches[0], lookup_offset=lookup_offset)
+
+    # Otherwise replace the match(es) found in the string using re.sub
     # TODO: this can probably be optimised by using matches instead of re.sub
     return re.sub(r'(?<!\\)[&@$](?:([0-9]*)(?!\()|(?:\(([0-9]+)(?:, *([0-9a-zA-Z_]+))*\))?)|(?<!\\)\\[\[\]@#$&*]',
-                  partial(process_amp, data, spec, properties, lookup_offset=lookup_offset),
+                  partial(string_return_decorator(process_amp), data, spec, properties, lookup_offset=lookup_offset),
                   string)
 
 

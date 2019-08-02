@@ -1,4 +1,5 @@
 import re
+from functools import wraps
 
 
 def translate(pat):
@@ -41,3 +42,10 @@ def translate(pat):
         else:
             res = res + re.escape(c)
     return '(?ms)' + res + r'\Z'
+
+
+def string_return_decorator(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        return str(f(*args, **kwargs))
+    return wrapper
