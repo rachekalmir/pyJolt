@@ -1,4 +1,4 @@
-from pyjolt.transforms.shiftr_rewrite import shiftr
+from pyjolt.transforms.shiftr import shiftr
 
 __version__ = '0.0.1'
 

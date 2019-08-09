@@ -1,67 +1,5 @@
-from pyjolt import Jolt
-from tests.shiftr import assert_shiftr
-
-
-def test_array_explicit_key():
-    input_data = {
-        "Photos": ["AAA.jpg", "BBB.jpg"]
-    }
-    spec = {
-        "Photos": {
-            "1": "photo-&-url"
-        }
-    }
-    expected_output = {
-        "photo-1-url": "BBB.jpg"
-    }
-    assert_shiftr(expected_output, Jolt(input_data).shift(spec).data)
-    
-
-def test_array_mismatch():
-    # Context: Shiftr will only operate if / when it finds matches
-    # Purpose: Verify that Shiftr operates even when it is faced with array mismatches
-    input_data = {
-        "id": "reviewId",
-        "text": "This is a review.",
-        "rating": 5,
-
-        "statistics": {
-            "id": "statsId",
-            "feedbackCount": "10"
-        },
-        "author": [
-            {
-                "id": "authorId",
-                "name": "Author Name"
-            }
-        ]
-    }
-    spec = {
-        "id": "Id",
-        "text": "ReviewText",
-        "rating": "Rating",
-
-        "statistics": {
-            "0": {
-                "feedbackCount": "FeedbackCount"
-            }
-        },
-        "author": {
-            "id": "AuthorId",
-            "name": "AuthorName"
-        }
-    }
-    expected_output = {
-
-        "Id": "reviewId",
-        "ReviewText": "This is a review.",
-        "Rating": 5
-    }
-    assert_shiftr(expected_output, Jolt(input_data).shift(spec).data)
-
-
-def test_array_example():
-    input_data = {
+{
+    "input": {
         "Photos": [
             {
                 "Id": "1234",
@@ -100,10 +38,11 @@ def test_array_example():
                 ]
             }
         ]
-    }
-    # We aren't radically transforming the data here, just changing the case of the keys.
-    # This illustrates the usage of the '[]' and '&' operators, to put all the content in the right place, aka maintain order
-    spec = {
+    },
+
+    // We aren't radically transforming the data here, just changing the case of the keys.
+    // This illustrates the usage of the '[]' and '&' operators, to put all the content in the right place, aka maintain order
+    "spec": {
         "Photos": {
             "*": {
                 "Id": "photos[&1].id",
@@ -116,8 +55,9 @@ def test_array_example():
                 "SizesOrder": "photos[&1].sizesOrder"
             }
         }
-    }
-    expected_output = {
+    },
+
+    "expected": {
         "photos": [
             {
                 "id": "1234",
@@ -145,4 +85,5 @@ def test_array_example():
             }
         ]
     }
-    assert_shiftr(expected_output, Jolt(input_data).shift(spec).data)
+
+}
