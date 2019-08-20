@@ -145,7 +145,7 @@ class TreeManager(object):
 
     def __iter__(self):
         if isinstance(self._dict, dict):
-            for key, value in self._dict.items():
+            for key in self._dict.keys():
                 yield key, TreeManager(self._tree, self.path + [key])
         elif isinstance(self._dict, list):
             for index, _ in enumerate(self._dict):
