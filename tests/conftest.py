@@ -18,9 +18,6 @@ def pytest_generate_tests(metafunc):
         lst = []
         ids = []
         for json_file in os.listdir(os_path):
-            # with open(os.path.join(os_path, json_file)) as f:
-            #     js = jsc.loadf(f)
-            #     assert DeepDiff(js['expected_output'], Jolt(js['input']).shift(js['spec']).data, ignore_order=True, report_repetition=True) == {}
             try:
                 js = jsc.loads(read_file(os.path.join(os_path, json_file)))
                 lst.append(JoltTestObject(json_file, js['input'], js['spec'], js['expected']))
