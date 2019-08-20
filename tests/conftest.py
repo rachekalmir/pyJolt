@@ -14,7 +14,7 @@ def read_file(path: str) -> str:
 def pytest_generate_tests(metafunc):
     if "test_shiftr" == metafunc.definition.name:
         jsc = jsoncomment.JsonComment()
-        os_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'shiftr_tests_disabled')
+        os_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'shiftr_tests')
         lst = []
         ids = []
         for json_file in os.listdir(os_path):
