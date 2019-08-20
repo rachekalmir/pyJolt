@@ -7,7 +7,7 @@ Python implementation of [Jolt](https://github.com/bazaarvoice/jolt).
 
 | Feature     | Progress      |
 | ----------- | ------------- |
-| Shift       | *In progress* |
+| Shift       | *In progress* - 23/62 |
 | Default     |               |
 | Remove      |               |
 | Cardinality |               |
