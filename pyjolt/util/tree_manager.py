@@ -49,9 +49,12 @@ class ResultManager(object):
         dv = self._data
         for item, next_item in pairwise(path_list):
             if next_item is None:
-                # If next item is None then this is where the assignment to the value will take place
+                # If next_item is None then this is where the assignment to the value will take place
                 if isinstance(dv, list):
-                    dv[item] += [value]
+                    if len(dv) <= item:
+                        # If the current array is too short for the requested assignment, pad the array with Nones
+                        dv += [None] * (item + 1 - len(dv))
+                    dv[item] = value
                 elif isinstance(dv, dict) and dv.get(item) is not None:
                     if isinstance(dv[item], list):
                         dv[item] += [value]

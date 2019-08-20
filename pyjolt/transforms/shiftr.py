@@ -51,10 +51,13 @@ def process_amp(data: TreeManager, spec: TreeManager, properties: PropertyManage
 
     match: is the regular expression match and groups should 3 match groups &{0} | &({0},{0})
     """
+    # Process the [] operator
     if match.group()[0] == '[':
-        ascend = int(re.match(r'\[#([0-9]+)\]', match.group()).groups()[0])
+        rematch = re.match(r'\[#([0-9]+)\]', match.group())
+        # Default to "up 2 levels" which uses data[:-1] to generate the key value for the array
+        t = tuple(data.path[:-int(rematch.groups()[0]) + 1]) if rematch else tuple(data.path[:-1]), tuple(spec.path[:-1])
         # Use a default dict in the property class to return the index
-        return properties[data.path[:-ascend + 1]].array_bind[data.current_key]
+        return properties[t].array_bind[data.current_key]
     elif match.group()[0] == '\\':
         # Catch the case where \ is used to escape an operator []@#$& or \ itself
         return match.group()[1:]
@@ -106,13 +109,12 @@ def process_sub_amp(data: TreeManager, spec: TreeManager, properties: PropertyMa
     :param lookup_offset:
     :return:
     """
-    matches = list(re.finditer(r'(?<!\\)[&@$](?:([0-9]*)(?!\()|(?:\(([0-9]+)(?:, *([0-9a-zA-Z_]+))*\))?)|^\[#[0-9]+\]$', string))
+    matches = list(re.finditer(r'(?<!\\)[&@$](?:([0-9]*)(?!\()|(?:\(([0-9]+)(?:, *([0-9a-zA-Z_]+))*\))?)|^\[(?:#[0-9]+)?\]$', string))
     # If there is only one match and the match is the full string then return the type contained downstream
     if len(matches) == 1 and (len(matches[0].group()) == len(string) or string.startswith('[')):
         return process_amp(data, spec, properties, matches[0], lookup_offset=lookup_offset)
 
     # Otherwise replace the match(es) found in the string using re.sub
-    # TODO: this can probably be optimised by using matches instead of re.sub
     return re.sub(r'(?<!\\)[&@$](?:([0-9]*)(?!\()|(?:\(([0-9]+)(?:, *([0-9a-zA-Z_]+))*\))?)|(?<!\\)\\[\[\]@#$&*]',
                   partial(string_return_decorator(process_amp), data, spec, properties, lookup_offset=lookup_offset),
                   string)
@@ -129,7 +131,7 @@ def process_rhs_split(data: TreeManager, spec: TreeManager, properties: Property
     """
     # Process & and $
     # re.sub is used to replace Key[#2] with Key.[#2] for compatibility with Jolt protocol
-    return [process_sub_amp(data, spec, properties, v, lookup_offset) for v in re.sub(r'(?<![.\\])(\[[^]]+\])', r'.\g<1>', spec.value).split('.')]
+    return [process_sub_amp(data, spec, properties, v, lookup_offset) for v in re.sub(r'(?<![.\\])(\[[^]]*\])', r'.\g<1>', spec.value).split('.')]
 
 
 def process_rhs(data: TreeManager, spec: TreeManager, properties: PropertyManager, result: ResultManager, value, lookup_offset=0):
