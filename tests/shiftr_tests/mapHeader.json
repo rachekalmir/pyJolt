@@ -1,64 +1,63 @@
 {
-    "input": {
-		  "metadata": {
-			"id": "2",
-			"time": "2019-10-31T23:57:02Z"
-		  },
-		  "data": {
-			"kpi": "test",
-			"details": {
-			  "headers": [
-				"someHeader",
-				"otherHeader"
-			  ],
-			  "values": [
-				[
-				  123,
-				  2
-				],
-				[
-				  456,
-				  27
-				]
-			  ]
-			}
-		  }
-		},
+    "input":{
+  "somedata": {
+    "someId": "1",
+    "otherId": "p"
+  },
+  "data": {
+    "att1": "value1",
+    "nestdata": {
+      "nesth": [
+        "nesthatt1",
+        "nesthatt2"
+      ],
+      "nestvalues": [
+        [
+          123,
+          1
+        ],
+        [
+          456,
+          2
+        ]
+      ]
+    }
+  }
+},
 
-    "spec": {
-		"data": {
-		  "details": {
-			"values": {
-			  "*": {
-				"*": {
-				  "@": "data2[&2].@(4,headers[&0])"
-				},
-				"@(4,metadata)": {
-				  "*": "data2[&2].&"
-				},
-				"@(4,metaData)": {
-				  "*": "data2[&2].&"
-				},
-				"@(3,kpi)": "data2[&1].kpi"
-			  }
-			}
-		  }
-		}
-	  },
+    "spec": [{
+  "operation": "shift",
+  "spec": {
+    "data": {
+      "nestdata": {
+        "nestvalues": {
+          "*": {
+            "*": {
+              "@": "data2[&2].@(4,headers[&0])"
+            },
+            "@(4,somedata)": {
+              "*": "data2[&2].&"
+            },
+            "@(4,somedata)": {
+              "*": "data2[&2].&"
+            },
+            "@(3,att1)": "data2[&1].att1"
+          }
+        }
+      }
+    }
+  }
+}],
 
-    "expected": {
-		  "data2" : [ {
-			"id" : "2",
-			"time" : "2019-10-31T23:57:02Z",
-			"kpi" : "test",
-			"someHeader" : 123,
-			"otherHeader" : 2
-		  }, {
-			"id" : "2",
-			"time" : "2019-10-31T23:57:02Z",
-			"kpi" : "test",
-			"someHeader" : 456,
-			"otherHeader" : 27
-		  } ]
-		}
+    "expected":{
+  "data2" : [ {
+    "someId" : "1",
+    "otherId" : "p",
+    "att1" : "value1"
+  }, {
+    "someId" : "1",
+    "otherId" : "p",
+    "att1" : "value1"
+  } ]
+}
 }
