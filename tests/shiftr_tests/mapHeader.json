@@ -1,0 +1,63 @@
+{
+    "input":{
+  "somedata": {
+    "someId": "1",
+    "otherId": "p"
+  },
+  "data": {
+    "att1": "value1",
+    "nestdata": {
+      "nesth": [
+        "nesthatt1",
+        "nesthatt2"
+      ],
+      "nestvalues": [
+        [
+          123,
+          1
+        ],
+        [
+          456,
+          2
+        ]
+      ]
+    }
+  }
+},
+
+    "spec": [{
+  "operation": "shift",
+  "spec": {
+    "data": {
+      "nestdata": {
+        "nestvalues": {
+          "*": {
+            "*": {
+              "@": "data2[&2].@(4,headers[&0])"
+            },
+            "@(4,somedata)": {
+              "*": "data2[&2].&"
+            },
+            "@(4,somedata)": {
+              "*": "data2[&2].&"
+            },
+            "@(3,att1)": "data2[&1].att1"
+          }
+        }
+      }
+    }
+  }
+}],
+
+    "expected":{
+  "data2" : [ {
+    "someId" : "1",
+    "otherId" : "p",
+    "att1" : "value1"
+  }, {
+    "someId" : "1",
+    "otherId" : "p",
+    "att1" : "value1"
+  } ]
+}
+}
