@@ -1,0 +1,64 @@
+{
+    "input": {
+		  "metadata": {
+			"id": "2",
+			"time": "2019-10-31T23:57:02Z"
+		  },
+		  "data": {
+			"kpi": "test",
+			"details": {
+			  "headers": [
+				"someHeader",
+				"otherHeader"
+			  ],
+			  "values": [
+				[
+				  123,
+				  2
+				],
+				[
+				  456,
+				  27
+				]
+			  ]
+			}
+		  }
+		}
+
+    "spec": {
+		"data": {
+		  "details": {
+			"values": {
+			  "*": {
+				"*": {
+				  "@": "data2[&2].@(4,headers[&0])"
+				},
+				"@(4,metadata)": {
+				  "*": "data2[&2].&"
+				},
+				"@(4,metaData)": {
+				  "*": "data2[&2].&"
+				},
+				"@(3,kpi)": "data2[&1].kpi"
+			  }
+			}
+		  }
+		}
+	  },
+
+    "expected": {
+		  "data2" : [ {
+			"id" : "2",
+			"time" : "2019-10-31T23:57:02Z",
+			"kpi" : "test",
+			"someHeader" : 123,
+			"otherHeader" : 2
+		  }, {
+			"id" : "2",
+			"time" : "2019-10-31T23:57:02Z",
+			"kpi" : "test",
+			"someHeader" : 456,
+			"otherHeader" : 27
+		  } ]
+		}
+}
